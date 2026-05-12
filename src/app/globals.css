@@ -1,0 +1,424 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+Pro:wght@600;700&family=Noto+Sans:wght@400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    /* Brand */
+    --navy: #1F3A68;
+    --navy-dark: #0d1e3a;
+    --navy-light: #2d4f8a;
+    --ulaw-red: #B32024;
+    --ulaw-red-dark: #8a171a;
+    --gold: #c9a84c;
+    --gold-light: #dfc078;
+
+    /* Event types */
+    --event-class: #2563eb;
+    --event-exam: #dc2626;
+    --event-deadline: #d97706;
+    --event-event: #7c3aed;
+    --event-meeting: #059669;
+
+    /* Sidebar width */
+    --sidebar-w: 260px;
+    --topbar-h: 60px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    @apply bg-slate-50 text-slate-800 font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-slate-100; }
+  ::-webkit-scrollbar-thumb { @apply bg-slate-300 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-slate-400; }
+}
+
+@layer components {
+
+  /* ── Layout Shell ──────────────────────────────────────── */
+  .portal-shell {
+    @apply flex min-h-screen bg-slate-50;
+  }
+
+  .portal-sidebar {
+    @apply fixed top-0 left-0 h-screen bg-white border-r border-slate-200 flex flex-col z-40;
+    width: var(--sidebar-w);
+    transition: transform 0.2s ease;
+  }
+
+  .portal-sidebar.collapsed {
+    transform: translateX(calc(-1 * var(--sidebar-w)));
+  }
+
+  .portal-content {
+    @apply flex-1 flex flex-col;
+    margin-left: var(--sidebar-w);
+    min-height: 100vh;
+  }
+
+  .portal-topbar {
+    @apply sticky top-0 z-30 bg-white border-b border-slate-200 flex items-center gap-3 px-6;
+    height: var(--topbar-h);
+  }
+
+  .portal-main {
+    @apply flex-1 p-6 max-w-6xl w-full mx-auto;
+  }
+
+  /* ── Sidebar Navigation ───────────────────────────────── */
+  .sidebar-brand {
+    @apply flex items-center gap-3 px-5 py-4 border-b border-slate-100;
+  }
+
+  .sidebar-logo {
+    @apply w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm;
+    background: var(--navy);
+  }
+
+  .sidebar-nav {
+    @apply flex-1 overflow-y-auto py-3 px-3;
+  }
+
+  .sidebar-section {
+    @apply mb-4;
+  }
+
+  .sidebar-section-label {
+    @apply px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400;
+  }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 text-sm font-medium
+           transition-all duration-150 hover:bg-navy-50 hover:text-navy cursor-pointer;
+  }
+
+  .sidebar-link.active {
+    @apply bg-navy text-white shadow-sm;
+  }
+
+  .sidebar-link .badge-count {
+    @apply ml-auto bg-ulaw text-white text-[10px] px-1.5 py-0.5 rounded-full;
+  }
+
+  /* ── Cards ───────────────────────────────────────────── */
+  .card {
+    @apply bg-white rounded-2xl shadow-card border border-slate-100 overflow-hidden;
+  }
+
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-card-hover hover:-translate-y-0.5 cursor-pointer;
+  }
+
+  .card-stat {
+    @apply card p-5 flex flex-col gap-1;
+  }
+
+  .card-course {
+    @apply card card-hover p-5 flex flex-col gap-3;
+  }
+
+  /* ── Dashboard Cards ─────────────────────────────────── */
+  .dash-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4;
+  }
+
+  .stat-card {
+    @apply card p-5;
+  }
+
+  .stat-card-icon {
+    @apply w-10 h-10 rounded-xl flex items-center justify-center text-xl mb-3;
+  }
+
+  .stat-card-value {
+    @apply text-2xl font-extrabold text-navy-dark;
+  }
+
+  .stat-card-label {
+    @apply text-xs text-slate-500 mt-0.5;
+  }
+
+  /* ── Badges ──────────────────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+
+  .badge-navy { @apply badge bg-navy/10 text-navy; }
+  .badge-red  { @apply badge bg-ulaw/10 text-ulaw; }
+  .badge-gold { @apply badge bg-gold/20 text-gold-dark; }
+  .badge-green { @apply badge bg-emerald-100 text-emerald-700; }
+  .badge-blue { @apply badge bg-blue-100 text-blue-700; }
+  .badge-gray { @apply badge bg-slate-100 text-slate-600; }
+  .badge-amber { @apply badge bg-amber-100 text-amber-700; }
+  .badge-purple { @apply badge bg-purple-100 text-purple-700; }
+
+  /* Role badges */
+  .role-badge {
+    @apply badge text-[10px] uppercase tracking-wide;
+  }
+  .role-SUPER_ADMIN  { @apply badge bg-purple-100 text-purple-700; }
+  .role-ADMIN        { @apply badge bg-navy/10 text-navy; }
+  .role-MODERATOR    { @apply badge bg-cyan-100 text-cyan-700; }
+  .role-CREATOR      { @apply badge bg-emerald-100 text-emerald-700; }
+  .role-LECTURER     { @apply badge bg-gold/20 text-gold-dark; }
+  .role-STUDENT      { @apply badge bg-blue-100 text-blue-700; }
+  .role-PENDING_USER { @apply badge bg-slate-100 text-slate-500; }
+
+  /* Status badges */
+  .status-DRAFT       { @apply badge bg-slate-100 text-slate-500; }
+  .status-SUBMITTED   { @apply badge bg-amber-100 text-amber-700; }
+  .status-UNDER_REVIEW { @apply badge bg-blue-100 text-blue-700; }
+  .status-APPROVED    { @apply badge bg-emerald-100 text-emerald-700; }
+  .status-REJECTED    { @apply badge bg-red-100 text-red-700; }
+  .status-PUBLISHED   { @apply badge bg-green-100 text-green-800; }
+  .status-ARCHIVED    { @apply badge bg-slate-100 text-slate-600; }
+
+  /* Announcement tag badges */
+  .tag-LICH_HOC  { @apply badge bg-blue-100 text-blue-700; }
+  .tag-DEADLINE  { @apply badge bg-red-100 text-red-700; }
+  .tag-THAY_DOI  { @apply badge bg-amber-100 text-amber-700; }
+  .tag-THI_CU    { @apply badge bg-purple-100 text-purple-700; }
+  .tag-CHUNG_CHI { @apply badge bg-emerald-100 text-emerald-700; }
+  .tag-KHAC      { @apply badge bg-slate-100 text-slate-600; }
+
+  /* ── Buttons ─────────────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold
+           text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1
+           disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap;
+  }
+
+  .btn-primary {
+    @apply btn bg-navy text-white hover:bg-navy-light focus:ring-navy shadow-sm;
+  }
+
+  .btn-danger {
+    @apply btn bg-ulaw text-white hover:bg-ulaw-dark focus:ring-ulaw shadow-sm;
+  }
+
+  .btn-gold {
+    @apply btn bg-gold text-white hover:bg-gold-dark focus:ring-gold shadow-sm;
+  }
+
+  .btn-outline {
+    @apply btn border border-slate-200 text-slate-700 bg-white hover:border-navy hover:text-navy;
+  }
+
+  .btn-ghost {
+    @apply btn text-slate-600 hover:bg-slate-100;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs rounded-lg;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3.5 text-base rounded-2xl;
+  }
+
+  /* ── Form inputs ─────────────────────────────────────── */
+  .input {
+    @apply w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-sm
+           focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy
+           placeholder:text-slate-400 transition-colors;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-slate-700 mb-1.5;
+  }
+
+  .input-group {
+    @apply space-y-1;
+  }
+
+  /* ── Tables ──────────────────────────────────────────── */
+  .table-wrapper {
+    @apply overflow-x-auto;
+  }
+
+  table {
+    @apply w-full text-sm;
+  }
+
+  thead tr {
+    @apply bg-slate-50 border-b border-slate-200;
+  }
+
+  th {
+    @apply px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide;
+  }
+
+  td {
+    @apply px-4 py-3 border-b border-slate-100;
+  }
+
+  tr:last-child td {
+    @apply border-b-0;
+  }
+
+  tbody tr {
+    @apply hover:bg-slate-50/50 transition-colors;
+  }
+
+  /* ── Announcements ───────────────────────────────────── */
+  .announcement-card {
+    @apply card overflow-hidden transition-all;
+  }
+
+  .announcement-card.urgent {
+    @apply border-l-4 border-l-ulaw;
+  }
+
+  .announcement-card.pinned {
+    @apply border-l-4 border-l-navy;
+  }
+
+  /* ── Event calendar ──────────────────────────────────── */
+  .event-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+
+  .event-CLASS    { background-color: var(--event-class); }
+  .event-EXAM     { background-color: var(--event-exam); }
+  .event-DEADLINE { background-color: var(--event-deadline); }
+  .event-EVENT    { background-color: var(--event-event); }
+  .event-MEETING  { background-color: var(--event-meeting); }
+
+  /* ── Video cards ─────────────────────────────────────── */
+  .video-card {
+    @apply card card-hover overflow-hidden;
+  }
+
+  .video-thumbnail {
+    @apply relative aspect-video bg-slate-200 overflow-hidden;
+  }
+
+  .video-thumbnail img {
+    @apply w-full h-full object-cover;
+  }
+
+  .video-play-overlay {
+    @apply absolute inset-0 flex items-center justify-center bg-black/30 opacity-0
+           group-hover:opacity-100 transition-opacity;
+  }
+
+  /* ── Course cards ────────────────────────────────────── */
+  .course-card {
+    @apply card-course relative;
+  }
+
+  .course-card-active {
+    @apply border-l-4 border-l-navy;
+  }
+
+  /* ── Progress bars ───────────────────────────────────── */
+  .progress-bar {
+    @apply h-2 rounded-full bg-slate-100 overflow-hidden;
+  }
+
+  .progress-fill {
+    @apply h-full rounded-full bg-navy transition-all duration-500;
+  }
+
+  /* ── Empty state ─────────────────────────────────────── */
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-16 text-center;
+  }
+
+  .empty-state-icon {
+    @apply text-5xl mb-4;
+  }
+
+  .empty-state-text {
+    @apply text-slate-400 text-sm;
+  }
+
+  /* ── Skeleton loaders ────────────────────────────────── */
+  .skeleton {
+    @apply animate-pulse bg-slate-200 rounded-xl;
+  }
+
+  /* ── Modals ──────────────────────────────────────────── */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4;
+  }
+
+  .modal-panel {
+    @apply bg-white rounded-3xl shadow-2xl w-full max-h-[90vh] overflow-y-auto;
+  }
+
+  .modal-header {
+    @apply flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100;
+  }
+
+  /* ── Section headers ─────────────────────────────────── */
+  .section-head {
+    @apply flex items-center justify-between mb-4;
+  }
+
+  .section-title {
+    @apply text-sm font-semibold text-slate-400 uppercase tracking-wide;
+  }
+
+  /* ── Page hero (inside portal) ───────────────────────── */
+  .page-hero {
+    @apply relative rounded-2xl overflow-hidden text-white p-8 mb-6;
+    background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 100%);
+  }
+
+  .page-hero-red {
+    @apply page-hero;
+    background: linear-gradient(135deg, var(--ulaw-red-dark) 0%, var(--ulaw-red) 100%);
+  }
+
+  /* ── Canvas-style module list ────────────────────────── */
+  .module-item {
+    @apply card mb-3 overflow-hidden;
+  }
+
+  .module-header {
+    @apply flex items-center gap-3 px-5 py-4 bg-navy/5 border-b border-slate-100;
+  }
+
+  .lesson-item {
+    @apply flex items-center gap-3 px-5 py-3 border-b border-slate-100 last:border-0
+           hover:bg-slate-50 transition-colors cursor-pointer;
+  }
+
+  /* ── Approval queue items ────────────────────────────── */
+  .queue-item {
+    @apply card p-5 flex items-start gap-4 mb-3;
+  }
+
+  /* ── Avatar ──────────────────────────────────────────── */
+  .avatar {
+    @apply rounded-full bg-navy/10 flex items-center justify-center font-semibold text-navy
+           shrink-0 overflow-hidden;
+  }
+
+  .avatar-sm  { @apply avatar w-8 h-8 text-xs; }
+  .avatar-md  { @apply avatar w-10 h-10 text-sm; }
+  .avatar-lg  { @apply avatar w-14 h-14 text-base; }
+  .avatar-xl  { @apply avatar w-20 h-20 text-xl; }
+
+  /* ── Public site ─────────────────────────────────────── */
+  .public-hero {
+    @apply relative text-white overflow-hidden min-h-[500px] flex items-end;
+    background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 60%, #234e8a 100%);
+  }
+
+  .public-nav {
+    @apply sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200;
+  }
+}

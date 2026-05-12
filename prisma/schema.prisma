@@ -1,0 +1,664 @@
+// ============================================================
+// ULAW VB2-TX Grade A LMS — Prisma Schema
+// Version: 2.0 — Full LMS Data Model
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ────────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  MODERATOR
+  CREATOR
+  LECTURER
+  STUDENT
+  PENDING_USER
+}
+
+enum ContentStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AnnouncementTag {
+  LICH_HOC // Lịch học
+  DEADLINE // Deadline
+  THAY_DOI // Thay đổi
+  THI_CU // Thi cử
+  CHUNG_CHI // Chứng chỉ
+  KHAC // Khác
+}
+
+enum CourseStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+}
+
+enum EventType {
+  CLASS
+  EXAM
+  DEADLINE
+  EVENT
+  MEETING
+  VIDEO_RELEASE
+}
+
+enum LibraryCategory {
+  LEGAL_DOC // Văn bản pháp luật
+  TEXTBOOK // Giáo trình
+  SLIDE // Slide bài giảng
+  TEACHER_NOTE // Giáo án giảng viên
+  STUDENT_NOTE // Ghi chú sinh viên
+  REFERENCE // Tài liệu tham khảo
+  PAST_EXAM // Đề thi mẫu
+  ASSIGNMENT_TPL // Mẫu bài tập
+  AI_SUMMARY // Tóm tắt AI
+  ADMIN_DOC // Văn bản hành chính
+}
+
+enum VideoType {
+  YOUTUBE
+  GOOGLE_DRIVE
+  EXTERNAL
+}
+
+enum SubmissionType {
+  GOOGLE_FORM
+  DRIVE_FOLDER
+  EXTERNAL_LINK
+  PORTAL_UPLOAD
+}
+
+enum AuditAction {
+  USER_CREATED
+  USER_APPROVED
+  USER_REJECTED
+  USER_ROLE_CHANGED
+  USER_DEACTIVATED
+  CONTENT_SUBMITTED
+  CONTENT_APPROVED
+  CONTENT_REJECTED
+  CONTENT_PUBLISHED
+  CONTENT_DELETED
+  CONTENT_ARCHIVED
+  ADMIN_LOGIN
+  CALENDAR_SYNC
+  VIDEO_CHANGED
+  DOCUMENT_CHANGED
+  PRIVACY_CHANGED
+  GOOGLE_LINKED
+  GOOGLE_UNLINKED
+  SYSTEM_SETTING_CHANGED
+}
+
+// ── Core User & Auth ─────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String?
+  image        String?
+  role         Role     @default(PENDING_USER)
+  isActive     Boolean  @default(false)
+  googleId     String?  @unique
+  googleEmail  String?
+  googleLinked Boolean  @default(false)
+  mssv         String?  @unique // Student ID
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  profile         UserProfile?
+  privacySetting  PrivacySetting?
+  calendarSync    CalendarSync?
+  accounts        Account[]
+  sessions        Session[]
+  lecturedCourses Course[]        @relation("CourseWithLecturer")
+
+  // Content authorship
+  announcements     Announcement[]
+  events            Event[]           @relation("EventCreator")
+  libraryItems      LibraryItem[]     @relation("LibraryUploader")
+  videos            Video[]           @relation("VideoUploader")
+  assignments       Assignment[]      @relation("AssignmentCreator")
+  submissions       Submission[]
+  discussions       Discussion[]
+  discussionReplies DiscussionReply[]
+  videoBookmarks    VideoBookmark[]
+  videoNotes        VideoNote[]
+
+  // Admin actions
+  approvedBy   Invitation[] @relation("InvitedBy")
+  auditLogs    AuditLog[]   @relation("AuditActor")
+  auditTargets AuditLog[]   @relation("AuditTarget")
+
+  @@map("users")
+}
+
+model UserProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Academic
+  learningGroup String?
+  enrollYear    String?
+
+  // Personal (privacy-gated)
+  phone         String?
+  zalo          String?
+  personalEmail String?
+  workplace     String?
+  jobTitle      String?
+  city          String?
+  bio           String?
+  linkedin      String?
+  facebook      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_profiles")
+}
+
+model PrivacySetting {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  sharePhone         Boolean @default(false)
+  shareZalo          Boolean @default(false)
+  sharePersonalEmail Boolean @default(false)
+  shareWorkplace     Boolean @default(false)
+  shareJobTitle      Boolean @default(false)
+  shareCity          Boolean @default(false)
+  shareBio           Boolean @default(false)
+  shareSocialLinks   Boolean @default(false)
+  shareAvatar        Boolean @default(true)
+
+  updatedAt DateTime @updatedAt
+
+  @@map("privacy_settings")
+}
+
+model CalendarSync {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  googleCalendarId String?
+  accessToken      String?
+  refreshToken     String?
+  tokenExpiry      DateTime?
+  syncEnabled      Boolean   @default(false)
+  syncClasses      Boolean   @default(true)
+  syncExams        Boolean   @default(true)
+  syncDeadlines    Boolean   @default(true)
+  syncEvents       Boolean   @default(true)
+  lastSyncAt       DateTime?
+  lastSyncStatus   String?
+  lastSyncError    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("calendar_syncs")
+}
+
+// NextAuth models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ── Invitations ──────────────────────────────────────────────
+
+model Invitation {
+  id          String    @id @default(cuid())
+  email       String
+  role        Role      @default(STUDENT)
+  token       String    @unique @default(cuid())
+  expiresAt   DateTime
+  usedAt      DateTime?
+  invitedById String
+  invitedBy   User      @relation("InvitedBy", fields: [invitedById], references: [id])
+  note        String?
+  createdAt   DateTime  @default(now())
+
+  @@index([email])
+  @@index([token])
+  @@map("invitations")
+}
+
+// ── Courses & Modules ────────────────────────────────────────
+
+model Course {
+  id          String       @id @default(cuid())
+  slug        String       @unique
+  code        String       @unique
+  name        String
+  credits     Int
+  icon        String?
+  description String?
+  status      CourseStatus @default(UPCOMING)
+  order       Int          @default(0)
+  lecturerId  String?
+  lecturer    User?        @relation("CourseWithLecturer", fields: [lecturerId], references: [id])
+
+  // External links
+  notebooklmUrl String?
+  driveUrl      String?
+  elearningUrl  String?
+
+  // Exam info
+  examDate   DateTime?
+  examFormat String?
+  examNotes  String?
+
+  // Relations
+  modules       Module[]
+  announcements Announcement[]
+  events        Event[]
+  libraryItems  LibraryItem[]
+  videos        Video[]
+  assignments   Assignment[]
+  discussions   Discussion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("courses")
+}
+
+// Add lecturer relation on User
+// (handled via explicit relation name)
+model Module {
+  id          String  @id @default(cuid())
+  courseId    String
+  course      Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  order       Int     @default(0)
+  weekNumber  Int?
+  isPublished Boolean @default(false)
+
+  lessons Lesson[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("modules")
+}
+
+model Lesson {
+  id          String  @id @default(cuid())
+  moduleId    String
+  module      Module  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title       String
+  content     String? @db.Text
+  order       Int     @default(0)
+  videoId     String?
+  video       Video?  @relation(fields: [videoId], references: [id])
+  isPublished Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("lessons")
+}
+
+// ── Announcements ────────────────────────────────────────────
+
+model Announcement {
+  id       String          @id @default(cuid())
+  title    String
+  content  String          @db.Text
+  tag      AnnouncementTag @default(KHAC)
+  authorId String
+  author   User            @relation(fields: [authorId], references: [id])
+  courseId String?
+  course   Course?         @relation(fields: [courseId], references: [id])
+
+  pinned    Boolean       @default(false)
+  urgent    Boolean       @default(false)
+  published Boolean       @default(true)
+  status    ContentStatus @default(PUBLISHED)
+  publishAt DateTime?
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([publishAt])
+  @@index([status])
+  @@map("announcements")
+}
+
+// ── Calendar Events ──────────────────────────────────────────
+
+model Event {
+  id          String    @id @default(cuid())
+  title       String
+  date        DateTime
+  endDate     DateTime?
+  type        EventType
+  time        String?
+  room        String?
+  description String?
+  courseId    String?
+  course      Course?   @relation(fields: [courseId], references: [id])
+  creatorId   String
+  creator     User      @relation("EventCreator", fields: [creatorId], references: [id])
+  isPublished Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@map("events")
+}
+
+// ── Video Library ─────────────────────────────────────────────
+
+model Video {
+  id            String    @id @default(cuid())
+  title         String
+  description   String?   @db.Text
+  url           String
+  type          VideoType @default(YOUTUBE)
+  thumbnailUrl  String?
+  duration      String? // e.g. "1:23:45"
+  courseId      String?
+  course        Course?   @relation(fields: [courseId], references: [id])
+  uploaderId    String
+  uploader      User      @relation("VideoUploader", fields: [uploaderId], references: [id])
+  lecturerName  String?
+  classDate     DateTime?
+  tags          String[]
+  relatedDocIds String[]
+
+  status      ContentStatus @default(DRAFT)
+  isPublished Boolean       @default(false)
+  viewCount   Int           @default(0)
+
+  // Relations
+  bookmarks VideoBookmark[]
+  notes     VideoNote[]
+  lessons   Lesson[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([status])
+  @@map("videos")
+}
+
+model VideoBookmark {
+  id      String @id @default(cuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId String
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, videoId])
+  @@map("video_bookmarks")
+}
+
+model VideoNote {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId   String
+  video     Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  content   String  @db.Text
+  timestamp String? // e.g. "12:34"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("video_notes")
+}
+
+// ── Digital Library ───────────────────────────────────────────
+
+model LibraryItem {
+  id          String          @id @default(cuid())
+  title       String
+  category    LibraryCategory
+  description String?
+  fileUrl     String?
+  driveId     String?
+  driveUrl    String?
+  fileType    String? // pdf, docx, pptx, etc.
+  version     String?
+  author      String?
+  tags        String[]
+
+  courseId   String?
+  course     Course? @relation(fields: [courseId], references: [id])
+  uploaderId String
+  uploader   User    @relation("LibraryUploader", fields: [uploaderId], references: [id])
+
+  accessLevel   String        @default("STUDENT") // PUBLIC, STUDENT, ADMIN
+  status        ContentStatus @default(PUBLISHED)
+  downloadCount Int           @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([courseId])
+  @@map("library_items")
+}
+
+// ── Assignments ───────────────────────────────────────────────
+
+model Assignment {
+  id             String         @id @default(cuid())
+  title          String
+  instructions   String         @db.Text
+  courseId       String
+  course         Course         @relation(fields: [courseId], references: [id])
+  creatorId      String
+  creator        User           @relation("AssignmentCreator", fields: [creatorId], references: [id])
+  dueDate        DateTime
+  submissionType SubmissionType @default(GOOGLE_FORM)
+  submissionUrl  String?
+  maxScore       Int?
+  weight         Float? // Percentage of final grade
+  isPublished    Boolean        @default(false)
+
+  submissions Submission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+  @@map("assignments")
+}
+
+model Submission {
+  id           String     @id @default(cuid())
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id])
+  studentId    String
+  student      User       @relation(fields: [studentId], references: [id])
+  submitUrl    String?
+  notes        String?
+  score        Float?
+  feedback     String?
+  submittedAt  DateTime   @default(now())
+  gradedAt     DateTime?
+
+  @@unique([assignmentId, studentId])
+  @@map("submissions")
+}
+
+// ── Discussions ───────────────────────────────────────────────
+
+model Discussion {
+  id         String  @id @default(cuid())
+  courseId   String
+  course     Course  @relation(fields: [courseId], references: [id])
+  authorId   String
+  author     User    @relation(fields: [authorId], references: [id])
+  title      String
+  content    String  @db.Text
+  category   String  @default("general") // general, qa, exam, group, support, admin
+  isPinned   Boolean @default(false)
+  isClosed   Boolean @default(false)
+  isApproved Boolean @default(true)
+
+  replies DiscussionReply[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+  @@map("discussions")
+}
+
+model DiscussionReply {
+  id           String     @id @default(cuid())
+  discussionId String
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  authorId     String
+  author       User       @relation(fields: [authorId], references: [id])
+  content      String     @db.Text
+  isApproved   Boolean    @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("discussion_replies")
+}
+
+// ── FAQ ───────────────────────────────────────────────────────
+
+model FAQ {
+  id          String  @id @default(cuid())
+  category    String
+  question    String
+  answer      String  @db.Text
+  order       Int     @default(0)
+  isPublished Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("faqs")
+}
+
+// ── Contacts / Class Directory ────────────────────────────────
+
+model Contact {
+  id        String  @id @default(cuid())
+  name      String
+  role      String
+  email     String?
+  groupName String?
+  note      String?
+  order     Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("contacts")
+}
+
+// ── Audit Logs ────────────────────────────────────────────────
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  actorId   String?
+  actor     User?       @relation("AuditActor", fields: [actorId], references: [id])
+  targetId  String?
+  target    User?       @relation("AuditTarget", fields: [targetId], references: [id])
+  action    AuditAction
+  entity    String? // e.g. "Announcement", "Video", "User"
+  entityId  String?
+  detail    Json?
+  ipAddress String?
+
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ── System Config ─────────────────────────────────────────────
+
+model SiteConfig {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  @@map("site_config")
+}
+
+// ── External Links ────────────────────────────────────────────
+
+model ExternalLink {
+  id       String  @id @default(cuid())
+  label    String
+  url      String
+  icon     String?
+  order    Int     @default(0)
+  isActive Boolean @default(true)
+
+  @@map("external_links")
+}
