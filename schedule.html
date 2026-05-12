@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lịch học & Deadline · ULAW VB2 – Class Portal</title>
+  <meta name="description" content="Lịch học, lịch thi và deadline của lớp Văn bằng 2 Luật từ xa ULAW – hiển thị dạng calendar và danh sách." />
+  <meta name="theme-color" content="#1F3A68" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%231F3A68'/%3E%3Ctext x='50' y='62' text-anchor='middle' font-family='Inter,sans-serif' font-size='42' font-weight='800' fill='white'%3EUL%3C/text%3E%3C/svg%3E" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body data-page="schedule">
+  <div id="site-header"></div>
+
+  <main id="main">
+    <section class="hero">
+      <div class="container">
+        <span class="badge">📅 Học kỳ I – 2026</span>
+        <h1>Lịch học & Deadline</h1>
+        <p class="lead">Toàn bộ buổi học, kỳ thi, deadline được hiển thị thống nhất theo tháng và theo tuần.</p>
+        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+          <a class="btn btn-accent" href="#" id="open-gcal" target="_blank" rel="noopener">📆 Mở Google Calendar lớp</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="container block">
+      <div class="section-header">
+        <h2><span class="accent-bar"></span> Lịch tháng</h2>
+        <div class="flex gap-2">
+          <button class="btn btn-outline btn-sm" id="cal-prev" aria-label="Tháng trước">←</button>
+          <button class="btn btn-outline btn-sm" id="cal-today">Hôm nay</button>
+          <button class="btn btn-outline btn-sm" id="cal-next" aria-label="Tháng sau">→</button>
+          <span id="cal-label" style="align-self:center; font-weight:700; color:var(--navy-dark); margin-left:6px;"></span>
+        </div>
+      </div>
+
+      <div class="notice">
+        <strong>Chú thích màu:</strong>
+        <span style="color:var(--event-class)">■ Lịch học</span> &nbsp;
+        <span style="color:var(--event-exam)">■ Thi / kiểm tra</span> &nbsp;
+        <span style="color:var(--event-deadline)">■ Deadline</span> &nbsp;
+        <span style="color:#7C3AED">■ Sự kiện lớp</span>
+      </div>
+
+      <div class="cal-grid" id="calendar" aria-label="Lịch tháng"></div>
+
+      <div class="grid-2 mt-4">
+        <div>
+          <div class="section-header">
+            <h2><span class="accent-bar"></span> Tuần này</h2>
+          </div>
+          <div class="card" id="week-list"></div>
+        </div>
+        <div>
+          <div class="section-header">
+            <h2><span class="accent-bar"></span> Deadline sắp tới</h2>
+          </div>
+          <div class="card" id="deadline-list"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script>
+    document.getElementById("open-gcal").href = window.SITE_CONFIG.links.googleCalendar;
+  </script>
+</body>
+</html>

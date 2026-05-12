@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Đây là cổng thông tin nội bộ lớp học – có thể không index toàn bộ
+# Nếu muốn riêng tư hoàn toàn, đổi thành: Disallow: /

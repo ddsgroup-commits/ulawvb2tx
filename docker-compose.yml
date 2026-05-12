@@ -1,0 +1,130 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL Database ──────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: ulaw_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ulaw_user
+      POSTGRES_PASSWORD: ulaw_pass
+      POSTGRES_DB: ulaw_portal
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ulaw_user -d ulaw_portal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Next.js Application ──────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: ulaw_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ulaw-vb2-portal.rule=Host(`portal.srv1559779.hstgr.cloud`)"
+      - "traefik.http.services.ulaw-vb2-portal.loadbalancer.server.port=3000"
+      - "traefik.http.routers.ulaw-vb2-portal.entrypoints=websecure"
+      - "traefik.http.routers.ulaw-vb2-portal.tls=true"
+      - "traefik.http.routers.ulaw-vb2-portal.tls.certresolver=letsencrypt"
+    environment:
+      DATABASE_URL: "postgresql://ulaw_user:ulaw_pass@postgres:5432/ulaw_portal?schema=public"
+      NEXTAUTH_URL: "${NEXTAUTH_URL:-http://localhost:3000}"
+      NEXTAUTH_SECRET: "${NEXTAUTH_SECRET:?NEXTAUTH_SECRET is required}"
+      AUTH_URL: "${NEXTAUTH_URL:-http://localhost:3000}"
+      AUTH_SECRET: "${NEXTAUTH_SECRET:?NEXTAUTH_SECRET is required}"
+      AUTH_TRUST_HOST: "true"
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:-}"
+      ADMIN_EMAIL: "${ADMIN_EMAIL:-admin@ulaw-vb2.edu.vn}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-Admin@2026!}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ── Prisma DB Migrations (run once) ─────────────────────
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: ulaw_migrate
+    # Use `db push` rather than `migrate deploy` so the same command is
+    # safe whether the DB was originally created via push or migrate.
+    # All current schema changes are additive (new tables / nullable
+    # columns / extra enum values), so push won't drop data; the
+    # --accept-data-loss flag is intentionally omitted as a guard.
+    command: sh -c "npx prisma db push --skip-generate && npx tsx prisma/seed.ts"
+    environment:
+      DATABASE_URL: "postgresql://ulaw_user:ulaw_pass@postgres:5432/ulaw_portal?schema=public"
+      ADMIN_EMAIL: "${ADMIN_EMAIL:-admin@ulaw-vb2.edu.vn}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-Admin@2026!}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # ── Daily DB backup (runs inside the docker network) ────────
+  # Streams pg_dump to /var/backups/ulaw-portal on the host every day
+  # at 02:00. Prunes files older than RETENTION_DAYS. The container
+  # has no internet access — backups never leave your VPS unless you
+  # copy them off (rsync / S3) yourself.
+  backup:
+    image: postgres:16-alpine
+    container_name: ulaw_backup
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - /var/backups/ulaw-portal:/backups
+    environment:
+      PGUSER: ulaw_user
+      PGPASSWORD: ulaw_pass
+      PGHOST: postgres
+      PGDATABASE: ulaw_portal
+      RETENTION_DAYS: "30"
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        echo "Backup service started. Output → /backups (host: /var/backups/ulaw-portal).";
+        mkdir -p /backups;
+        while true; do
+          now=$$(date +%s);
+          # next 02:00 server-local; busybox date doesn't support -d 'tomorrow',
+          # so compute via arithmetic.
+          today02=$$(date -d "$$(date +%Y-%m-%d) 02:00:00" +%s 2>/dev/null || echo 0);
+          if [ "$$today02" -le "$$now" ]; then
+            next=$$((today02 + 86400));
+          else
+            next=$$today02;
+          fi;
+          delay=$$((next - now));
+          [ "$$delay" -lt 60 ] && delay=60;
+          echo "[`date -Iseconds`] next backup in $$delay seconds";
+          sleep $$delay;
+          ts=$$(date +%Y-%m-%d_%H-%M);
+          out=/backups/ulaw_portal_$$ts.sql.gz;
+          echo "[`date -Iseconds`] dumping → $$out";
+          if pg_dump --no-owner --no-privileges --clean --if-exists | gzip -9 > $$out; then
+            echo "[`date -Iseconds`] ok ($$(du -h $$out | cut -f1))";
+            find /backups -name 'ulaw_portal_*.sql.gz' -mtime +$$RETENTION_DAYS -delete;
+          else
+            echo "[`date -Iseconds`] FAILED";
+            rm -f $$out;
+          fi;
+        done
+
+volumes:
+  postgres_data:

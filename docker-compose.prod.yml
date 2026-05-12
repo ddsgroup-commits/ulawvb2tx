@@ -1,0 +1,128 @@
+version: "3.9"
+
+# ============================================================
+# ULAW VB2 Portal – Production Docker Compose
+# Domain:  https://portal.srv1559779.hstgr.cloud
+# SSL:     Let's Encrypt via Traefik v3
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+# ============================================================
+
+services:
+  # ── Traefik Reverse Proxy + SSL ──────────────────────────
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # Auto-redirect HTTP → HTTPS
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      # Let's Encrypt
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-linhtran.business@gmail.com}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
+    networks:
+      - proxy
+
+  # ── PostgreSQL Database ──────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: ulaw_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ulaw_user
+      POSTGRES_PASSWORD: "${DB_PASSWORD:?DB_PASSWORD is required}"
+      POSTGRES_DB: ulaw_portal
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ulaw_user -d ulaw_portal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  # ── Next.js Application ──────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    image: ulaw-portal:latest
+    container_name: ulaw_app
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=ulaw_proxy"
+      - "traefik.http.routers.ulaw-portal.rule=Host(`portal.srv1559779.hstgr.cloud`)"
+      - "traefik.http.routers.ulaw-portal.entrypoints=websecure"
+      - "traefik.http.routers.ulaw-portal.tls.certresolver=letsencrypt"
+      - "traefik.http.services.ulaw-portal.loadbalancer.server.port=3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://ulaw_user:${DB_PASSWORD}@postgres:5432/ulaw_portal?schema=public"
+      NEXTAUTH_URL: "https://portal.srv1559779.hstgr.cloud"
+      NEXTAUTH_SECRET: "${NEXTAUTH_SECRET:?NEXTAUTH_SECRET is required}"
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:-}"
+      ADMIN_EMAIL: "${ADMIN_EMAIL:-admin@ulaw-vb2.edu.vn}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}"
+      NEXT_PUBLIC_APP_URL: "https://portal.srv1559779.hstgr.cloud"
+      NEXT_PUBLIC_CLASS_NAME: "${NEXT_PUBLIC_CLASS_NAME:-VB2 Luật – ULAW HCM}"
+      NEXT_PUBLIC_SEMESTER: "${NEXT_PUBLIC_SEMESTER:-Học kỳ I – 2026}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - proxy
+      - internal
+
+  # ── Prisma Migrations (run once, then exits) ─────────────
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: ulaw_migrate
+    command: >
+      sh -c "npx prisma migrate deploy && npx tsx prisma/seed.ts"
+    environment:
+      DATABASE_URL: "postgresql://ulaw_user:${DB_PASSWORD}@postgres:5432/ulaw_portal?schema=public"
+      ADMIN_EMAIL: "${ADMIN_EMAIL:-admin@ulaw-vb2.edu.vn}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+    restart: "no"
+
+networks:
+  proxy:
+    name: ulaw_proxy
+    external: false
+  internal:
+    name: ulaw_internal
+    external: false
+
+volumes:
+  postgres_data:
+    name: ulaw_postgres_data
+  letsencrypt:
+    name: ulaw_letsencrypt

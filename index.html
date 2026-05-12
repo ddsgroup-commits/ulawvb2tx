@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ULAW VB2 – Class Portal | Trang chủ</title>
+  <meta name="description" content="Trung tâm thông tin lớp Văn bằng 2 Luật từ xa đầu tiên của Trường Đại học Luật TP.HCM – ULAW. Lịch học, thông báo, tài liệu, môn học, FAQ trong một nền tảng duy nhất." />
+  <meta name="theme-color" content="#1F3A68" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%231F3A68'/%3E%3Ctext x='50' y='62' text-anchor='middle' font-family='Inter,sans-serif' font-size='42' font-weight='800' fill='white'%3EUL%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+Pro:wght@600;700&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/stanford.css" />
+</head>
+<body data-page="home">
+
+  <!-- Top utility bar -->
+  <div class="sf-utility">
+    <div class="container">
+      <span class="left">🏛 Trường Đại học Luật TP. Hồ Chí Minh · Lớp Văn bằng 2 Luật từ xa – Khóa 1</span>
+      <span>
+        <a href="https://www.hcmulaw.edu.vn" target="_blank" rel="noopener">hcmulaw.edu.vn</a>
+        <a href="https://daotao.hcmulaw.edu.vn" target="_blank" rel="noopener">Cổng đào tạo</a>
+        <a href="https://www.facebook.com/hcmulaw" target="_blank" rel="noopener">Facebook ULAW</a>
+      </span>
+    </div>
+  </div>
+
+  <div id="site-header"></div>
+
+  <main id="main">
+
+    <!-- ───────────── HERO ───────────── -->
+    <section class="sf-hero" aria-labelledby="hero-title">
+      <div class="sf-hero-bg" style="background-image:url('https://www.hcmulaw.edu.vn/Temp/ArticleImage/fb5b3a47-842f-4dc0-b218-652e4da0a318-TOAN9830%20copy-10.JPG');"></div>
+      <div class="sf-hero-inner">
+        <span class="sf-hero-eyebrow">Class Portal · K1 · Niên khóa 2026</span>
+        <h1 id="hero-title">
+          Văn bằng 2 Luật từ xa.<br>
+          Học thuật chuẩn mực. Cộng đồng tiên phong.
+        </h1>
+        <p class="sf-hero-lead">
+          Trung tâm thông tin duy nhất cho lớp Văn bằng 2 Luật từ xa đầu tiên của Trường ĐH Luật TP.HCM —
+          kết nối lịch học, tài liệu, thông báo và cộng đồng học tập trong một nền tảng được thiết kế
+          chuyên nghiệp, bảo mật và dễ dùng.
+        </p>
+        <div class="sf-hero-cta">
+          <a href="announcements.html" class="sf-btn sf-btn-primary">Xem thông báo mới nhất →</a>
+          <a href="schedule.html" class="sf-btn sf-btn-ghost">Lịch học &amp; deadline</a>
+        </div>
+      </div>
+      <div class="sf-hero-meta">
+        <div class="container">
+          <span class="caption"><span class="live-dot"></span><strong>Đang cập nhật</strong> · Last updated <span id="hero-last-updated"></span></span>
+          <span class="caption">📸 Ảnh: Trường ĐH Luật TP.HCM</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── STATS BAND ───────────── -->
+    <section>
+      <div class="container">
+        <div class="sf-stats" id="sf-stats">
+          <!-- legacy stat targets (kept for compat, hidden) -->
+          <div id="stat-new" style="display:none"></div>
+          <div id="stat-week" style="display:none"></div>
+          <div id="stat-deadline" style="display:none"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── QUICK ACCESS ───────────── -->
+    <section class="sf-quickbar" aria-label="Truy cập nhanh">
+      <div class="container">
+        <h3>Truy cập nhanh</h3>
+        <div class="sf-quickbar-links">
+          <a href="announcements.html">📢 Thông báo</a>
+          <a href="schedule.html">📅 Lịch học &amp; deadline</a>
+          <a href="courses.html">📚 6 môn học</a>
+          <a href="library.html">🗂 Thư viện tài liệu</a>
+          <a href="contacts.html">👥 Danh bạ lớp</a>
+          <a href="faq.html">❓ FAQ</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── FEATURED STORIES ───────────── -->
+    <section class="sf-section">
+      <div class="container">
+        <div class="sf-section-head">
+          <div>
+            <div class="eyebrow">Tin nổi bật</div>
+            <h2>Cập nhật từ Nhà trường &amp; lớp học</h2>
+          </div>
+          <a class="more" href="announcements.html">Tất cả thông báo →</a>
+        </div>
+        <div class="sf-stories" id="sf-stories"></div>
+        <!-- legacy compat targets -->
+        <div id="pinned-list" style="display:none"></div>
+      </div>
+    </section>
+
+    <!-- ───────────── FEATURE BANNER ───────────── -->
+    <section class="sf-feature" style="background-image:url('https://www.hcmulaw.edu.vn/Temp/ArticleImage/1ec5fb49-ca9e-40f2-a1af-c57788410894-9%20(6)-55.jpg');">
+      <div class="container">
+        <div class="eyebrow">Tinh thần ULAW</div>
+        <h2>Pháp luật – Kỷ cương – Tri thức – Phụng sự</h2>
+        <p>
+          Lớp Văn bằng 2 Luật từ xa khóa đầu tiên là một bước tiến tiên phong trong mô hình đào tạo
+          của Trường ĐH Luật TP.HCM, hướng đến những người học trưởng thành, bận rộn nhưng vẫn quyết tâm
+          theo đuổi tri thức pháp lý ở chuẩn mực cao nhất.
+        </p>
+        <a href="courses.html" class="sf-btn sf-btn-primary">Khám phá chương trình →</a>
+      </div>
+    </section>
+
+    <!-- ───────────── UPCOMING (split) ───────────── -->
+    <section class="sf-section sf-fog">
+      <div class="container">
+        <div class="sf-section-head">
+          <div>
+            <div class="eyebrow">Tuần này &amp; sắp tới</div>
+            <h2>Buổi học, kỳ thi và deadline gần nhất</h2>
+          </div>
+          <a class="more" href="schedule.html">Mở lịch đầy đủ →</a>
+        </div>
+        <div class="sf-upcoming">
+          <div class="panel">
+            <h3>📅 Sự kiện tuần này</h3>
+            <div id="sf-week"></div>
+          </div>
+          <div class="panel">
+            <h3>⏰ Deadline sắp tới</h3>
+            <div id="sf-deadlines"></div>
+          </div>
+        </div>
+        <!-- legacy compat target -->
+        <div id="calendar-preview" style="display:none"></div>
+      </div>
+    </section>
+
+    <!-- ───────────── COURSES ───────────── -->
+    <section class="sf-section">
+      <div class="container">
+        <div class="sf-section-head">
+          <div>
+            <div class="eyebrow">Học kỳ I · Năm 2026</div>
+            <h2>Sáu môn học nền tảng</h2>
+          </div>
+          <a class="more" href="courses.html">Trang môn học →</a>
+        </div>
+        <div class="sf-courses" id="sf-courses"></div>
+        <!-- legacy compat target -->
+        <div id="course-list" style="display:none"></div>
+      </div>
+    </section>
+
+    <!-- ───────────── PILLARS (navy band) ───────────── -->
+    <section class="sf-section sf-navy">
+      <div class="container">
+        <div class="sf-section-head">
+          <div>
+            <div class="eyebrow" style="color:#C9A84C">Định hướng của lớp</div>
+            <h2>Một cộng đồng học tập chuyên nghiệp</h2>
+          </div>
+        </div>
+        <div class="sf-pillars">
+          <div class="sf-pillar">
+            <div class="ico">⚖</div>
+            <h4>Chuẩn mực pháp lý</h4>
+            <p>Nội dung và tài liệu trích dẫn từ giáo trình chính thức của ULAW, văn bản pháp luật hợp pháp, cập nhật đến năm 2026.</p>
+          </div>
+          <div class="sf-pillar">
+            <div class="ico">🤝</div>
+            <h4>Hỗ trợ lẫn nhau</h4>
+            <p>Năm nhóm học tập luân phiên trực Zoom, ghi chú nội dung và lưu lên Drive lớp — không ai bị bỏ lại phía sau.</p>
+          </div>
+          <div class="sf-pillar">
+            <div class="ico">🚀</div>
+            <h4>Tiên phong từ xa</h4>
+            <p>Lớp Văn bằng 2 từ xa đầu tiên của ULAW — kết hợp nghiêm túc học thuật và linh hoạt công nghệ (Zoom, NotebookLM, Drive).</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── RESOURCES ───────────── -->
+    <section class="sf-section sf-fog">
+      <div class="container">
+        <div class="sf-section-head">
+          <div>
+            <div class="eyebrow">Học liệu &amp; Công cụ</div>
+            <h2>Mọi tài nguyên học tập — trong một nơi</h2>
+          </div>
+          <a class="more" href="library.html">Mở thư viện →</a>
+        </div>
+        <div class="sf-resources">
+          <a href="library.html" class="sf-resource-card">
+            <div class="ico">🎬</div>
+            <h3>Video bài giảng</h3>
+            <p>Xem lại buổi học Zoom, video tóm tắt từng môn — nhúng YouTube và Google Drive trực tiếp.</p>
+          </a>
+          <a href="library.html" class="sf-resource-card">
+            <div class="ico">🗂</div>
+            <h3>Thư viện tài liệu</h3>
+            <p>Văn bản pháp luật, giáo trình, đề thi mẫu — tổng hợp từ thư viện ULAW và bộ sưu tập lớp.</p>
+          </a>
+          <a href="library.html" class="sf-resource-card">
+            <div class="ico">🧠</div>
+            <h3>AI Study Hub</h3>
+            <p>NotebookLM của Google cho từng môn học — đặt câu hỏi và ôn tập với chính tài liệu lớp.</p>
+          </a>
+          <a href="schedule.html" class="sf-resource-card">
+            <div class="ico">📅</div>
+            <h3>Lịch học &amp; Deadline</h3>
+            <p>Lịch tuần, lịch học cả kỳ, kỳ thi, deadline — đồng bộ với Google Calendar của lớp.</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── PHOTO GRID ───────────── -->
+    <section class="sf-section sf-tight">
+      <div class="container">
+        <div class="sf-section-head">
+          <div>
+            <div class="eyebrow">Cuộc sống ULAW</div>
+            <h2>Khoảnh khắc từ Nhà trường</h2>
+          </div>
+          <a class="more" href="https://www.facebook.com/hcmulaw" target="_blank" rel="noopener">Facebook ULAW →</a>
+        </div>
+      </div>
+      <div class="sf-photo-grid" id="sf-photo-grid"></div>
+    </section>
+
+    <!-- ───────────── PORTAL LOGIN CTA ───────────── -->
+    <section class="sf-portal-cta">
+      <div class="container">
+        <div class="inner">
+          <div class="ico">🔐</div>
+          <h2>Cổng thông tin nội bộ lớp</h2>
+          <p>Đăng nhập để truy cập lịch học, thông báo, 6 môn học, video bài giảng, AI Study Hub, thư viện tài liệu, danh bạ và FAQ — tất cả trong một nền tảng bảo mật.</p>
+          <div class="hint">
+            <span class="label">Cách đăng nhập lần đầu</span>
+            <div class="body">
+              <strong>Tên đăng nhập:</strong> MSSV (mã số sinh viên, 13 chữ số)<br>
+              <strong>Mật khẩu:</strong> tên gọi viết thường, không dấu<br>
+              <span class="ex">VD: MSSV 2543801010228 → mật khẩu "linh"</span>
+            </div>
+          </div>
+          <div>
+            <a href="announcements.html" class="gold-btn">Vào Portal lớp học →</a>
+          </div>
+          <div class="note">Quên mật khẩu? Liên hệ Ban cán sự lớp qua nhóm Zalo.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── ZALO CTA ───────────── -->
+    <section class="sf-cta">
+      <div class="container">
+        <h2>Đăng ký vào nhóm Zalo lớp</h2>
+        <p>Nhận thông báo nóng, đổi lịch, đề thi mẫu trực tiếp qua nhóm Zalo nội bộ — kênh dự phòng cho cổng thông tin này.</p>
+        <a href="#" class="sf-btn sf-btn-ghost" id="cta-zalo">Mở nhóm Zalo →</a>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script>
+    /* ============================================================
+       Home page – Stanford-style render override.
+       Redefines initHome() after main.js, so the DOMContentLoaded
+       handler in main.js picks up THIS version (function decls in
+       later top-level scripts override earlier ones).
+       ============================================================ */
+
+    function initHome() {
+      var lu = document.getElementById("hero-last-updated");
+      if (lu && window.SITE_CONFIG && SITE_CONFIG.lastUpdated) {
+        try {
+          lu.textContent = new Date(SITE_CONFIG.lastUpdated).toLocaleDateString("vi-VN",
+            { day: "2-digit", month: "long", year: "numeric" });
+        } catch (e) { lu.textContent = SITE_CONFIG.lastUpdated; }
+      }
+
+      var cta = document.getElementById("cta-zalo");
+      if (cta && window.SITE_CONFIG && SITE_CONFIG.links && SITE_CONFIG.links.zaloBackup) {
+        cta.href = SITE_CONFIG.links.zaloBackup;
+        cta.target = "_blank"; cta.rel = "noopener";
+      }
+
+      var announcements = window.ANNOUNCEMENTS || [];
+      var events        = window.EVENTS        || [];
+      var courses       = window.COURSES       || [];
+
+      var daysFromNow = (window.UI && UI.daysFromNow) ? UI.daysFromNow : function (iso) {
+        var d = new Date(iso); var today = new Date(); today.setHours(0,0,0,0);
+        return Math.round((d - today) / 86400000);
+      };
+      var escHtml = (window.UI && UI.escapeHtml) ? UI.escapeHtml : function (s) {
+        return String(s == null ? "" : s)
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+      };
+
+      /* -------- Stats -------- */
+      var newCount = announcements.filter(function (a) {
+        var d = daysFromNow(a.date); return d >= -7 && d <= 0;
+      }).length;
+      var weekEvents = events.filter(function (e) {
+        var d = daysFromNow(e.date); return d >= 0 && d <= 7;
+      }).length;
+      var nextDeadline = events
+        .filter(function (e) { return e.type === "deadline" && daysFromNow(e.date) >= 0; })
+        .sort(function (a, b) { return new Date(a.date) - new Date(b.date); })[0];
+      var totalCredits = courses.reduce(function (s, c) { return s + (c.credits || 0); }, 0);
+
+      var stats = [
+        { num: courses.length || 6, lbl: "Môn học học kỳ I", sub: "Tổng " + totalCredits + " tín chỉ" },
+        { num: announcements.length, lbl: "Thông báo đang hiển thị", sub: newCount + " trong 7 ngày qua" },
+        { num: weekEvents, lbl: "Sự kiện trong tuần", sub: "lịch học · thi · deadline" },
+        { num: nextDeadline ? (Math.max(0, daysFromNow(nextDeadline.date))) : "—",
+          lbl: "Ngày đến deadline gần nhất",
+          sub: nextDeadline ? nextDeadline.title : "Không có deadline" }
+      ];
+      var statsEl = document.getElementById("sf-stats");
+      if (statsEl) {
+        statsEl.innerHTML = stats.map(function (s) {
+          return '<div class="sf-stat">'
+               +   '<div class="num">' + escHtml(s.num) + '</div>'
+               +   '<div class="lbl">' + escHtml(s.lbl) + '</div>'
+               +   '<div class="sub">' + escHtml(s.sub) + '</div>'
+               + '</div>';
+        }).join("");
+      }
+
+      /* -------- Stories (pinned + recent announcements, max 5) -------- */
+      var pinned = announcements.filter(function (a) { return a.pinned; });
+      var recent = announcements.filter(function (a) { return !a.pinned; })
+                                .sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
+      var stories = pinned.concat(recent).slice(0, 5);
+
+      var tagLabelMap = {
+        LichHoc: "Lịch học", Deadline: "Deadline", ThayDoi: "Thay đổi",
+        ThiCu: "Thi cử", HanhChinh: "Hành chính", Khac: "Thông báo", Urgent: "Khẩn",
+        // tolerate the alt schema used by sibling site
+        lichHoc: "Lịch học", deadline: "Deadline", thayDoi: "Thay đổi",
+        thiCu: "Thi cử", chungChi: "Chứng chỉ", khac: "Thông báo", urgent: "Khẩn"
+      };
+      function firstTagLabel(a) {
+        var t = (a.tags && a.tags[0]) || a.tag;
+        return tagLabelMap[t] || "Thông báo";
+      }
+
+      var storiesHtml = "";
+      stories.forEach(function (a, i) {
+        var size = i === 0 ? "sf-story-lg" : "sf-story";
+        var img = ulawImages()[(i + 1) % ulawImages().length].url;
+        var date = new Date(a.date).toLocaleDateString("vi-VN",
+          { day: "2-digit", month: "long", year: "numeric" });
+        var preview = (a.body || a.content || "");
+        storiesHtml += '<a class="' + size + '" href="announcements.html#' + escHtml(a.id || "") + '">'
+          + '<div class="sf-story-img" style="background-image:url(\'' + img + '\')"></div>'
+          + '<div class="sf-story-body">'
+          +   '<div class="sf-story-tag">' + escHtml(firstTagLabel(a)) + (a.pinned ? ' · Ghim' : '') + '</div>'
+          +   '<div class="sf-story-title">' + escHtml(a.title) + '</div>'
+          + (preview ? '<div class="sf-story-desc">' + escHtml(truncate(preview, 140)) + '</div>' : '')
+          +   '<div class="sf-story-meta">📅 ' + date + ' · <strong>' + escHtml(a.author || 'BCS') + '</strong></div>'
+          + '</div></a>';
+      });
+      var storiesEl = document.getElementById("sf-stories");
+      if (storiesEl) storiesEl.innerHTML = storiesHtml;
+
+      /* -------- Week events -------- */
+      var weekList = events
+        .filter(function (e) { var d = daysFromNow(e.date); return d >= 0 && d <= 7; })
+        .sort(function (a, b) { return new Date(a.date) - new Date(b.date); });
+      var weekEl = document.getElementById("sf-week");
+      if (weekEl) {
+        weekEl.innerHTML = weekList.length
+          ? weekList.map(renderUpItem).join("")
+          : '<div style="padding:18px 0; color:#888; font-size:14px;">Không có sự kiện trong tuần này.</div>';
+      }
+
+      /* -------- Deadlines (next 6) -------- */
+      var dlList = events
+        .filter(function (e) { return e.type === "deadline" && daysFromNow(e.date) >= 0; })
+        .sort(function (a, b) { return new Date(a.date) - new Date(b.date); })
+        .slice(0, 6);
+      var dlEl = document.getElementById("sf-deadlines");
+      if (dlEl) {
+        dlEl.innerHTML = dlList.length
+          ? dlList.map(renderUpItem).join("")
+          : '<div style="padding:18px 0; color:#888; font-size:14px;">🎉 Chưa có deadline sắp tới.</div>';
+      }
+
+      /* -------- Courses (up to 6) -------- */
+      var coursesEl = document.getElementById("sf-courses");
+      if (coursesEl) {
+        var iconMap = {
+          "LLNN-NN": "⚖", "LLNN-PL": "📖",
+          "LHP": "📜", "LHC": "🏛",
+          "DS-TS-TK": "📘", "LGH": "🧠"
+        };
+        coursesEl.innerHTML = courses.slice(0, 6).map(function (c) {
+          var icon = c.icon || iconMap[c.code] || "📘";
+          var detailHref = c.slug ? ("courses/" + c.slug + ".html") : "courses.html";
+          var name = c.title || c.name || "";
+          var teacher = c.teacher || c.lecturer || "";
+          var summary = c.summary || c.desc || "";
+          return '<a class="sf-course" href="' + escHtml(detailHref) + '" style="text-decoration:none;">'
+            + '<div class="ico">' + icon + '</div>'
+            + '<h4>' + escHtml(name) + '</h4>'
+            + '<div class="meta">' + escHtml(c.code || '') + ' · ' + (c.credits || 0) + ' tín chỉ'
+            +   (teacher ? ' · ' + escHtml(teacher) : '') + '</div>'
+            + '<div class="desc">' + escHtml(truncate(summary, 140)) + '</div>'
+            + '</a>';
+        }).join("");
+      }
+
+      /* -------- Photo grid -------- */
+      var imgs = ulawImages().slice(0, 4);
+      var photoEl = document.getElementById("sf-photo-grid");
+      if (photoEl) {
+        photoEl.innerHTML = imgs.map(function (im) {
+          return '<a href="https://www.hcmulaw.edu.vn" target="_blank" rel="noopener" '
+               + 'style="background-image:url(\'' + im.url + '\')">'
+               + '<span class="caption">' + escHtml(im.cap) + '</span></a>';
+        }).join("");
+      }
+    }
+
+    function renderUpItem(e) {
+      var d = new Date(e.date);
+      var day = d.getDate();
+      var mon = d.toLocaleString("vi-VN", { month: "short" });
+      var esc = (window.UI && UI.escapeHtml) ? UI.escapeHtml : function (s) { return String(s == null ? "" : s); };
+      var loc = e.location || e.room || '';
+      return '<div class="sf-up-item type-' + (e.type || 'class') + '">'
+        + '<div class="sf-up-date"><div class="d">' + day + '</div><div class="m">' + esc(mon) + '</div></div>'
+        + '<div><div class="sf-up-title">' + esc(e.title) + '</div>'
+        + '<div class="sf-up-sub">'
+        + (e.time ? '⏰ ' + esc(e.time) : '')
+        + (loc ? (e.time ? ' · ' : '') + '📍 ' + esc(loc) : '')
+        + '</div></div></div>';
+    }
+
+    function truncate(s, n) {
+      s = String(s || "");
+      return s.length > n ? s.slice(0, n - 1) + "…" : s;
+    }
+
+    function ulawImages() {
+      return [
+        { url: "https://www.hcmulaw.edu.vn/Temp/ArticleImage/69aceea8-80bf-4efc-9480-88b4bb63083b-TOAN9772-37.JPG",  cap: "Hội thảo học thuật" },
+        { url: "https://www.hcmulaw.edu.vn/Temp/ArticleImage/8e88ec8d-be74-47f7-9480-fd91e2a89fca-base64-17784130017762120232629-52.jpeg", cap: "Sinh viên ULAW" },
+        { url: "https://www.hcmulaw.edu.vn/Temp/ArticleImage/049125d8-fee6-439e-abc2-c43e152be335-z7802699112511_83ea8ab46dae8dcb4cfc965a1e3108dd%20copy-29.jpg", cap: "Hội nghị toàn trường" },
+        { url: "https://www.hcmulaw.edu.vn/Temp/ArticleImage/dc82f4e2-1414-4ea8-b6a8-b68ef08b7a97-(01)-0.jpg", cap: "Hướng nghiệp & việc làm" },
+        { url: "https://www.hcmulaw.edu.vn/Temp/ArticleImage/1ec5fb49-ca9e-40f2-a1af-c57788410894-9%20(6)-55.jpg", cap: "Hợp tác quốc tế" },
+        { url: "https://www.hcmulaw.edu.vn/Resources/imagesPortlet/bcde93e7-a84f-47ee-88c8-d2c4f9c02a6b/z7223413965942_f8893d13ced6137cf69748ed886ad963.jpg", cap: "Sự kiện 50 năm ULAW" },
+        { url: "https://www.hcmulaw.edu.vn/Temp/ArticleImage/fb5b3a47-842f-4dc0-b218-652e4da0a318-TOAN9830%20copy-10.JPG", cap: "Khán phòng A" },
+        { url: "https://www.hcmulaw.edu.vn/Resources/assets/images/logo/logo.png", cap: "Logo ULAW" }
+      ];
+    }
+  </script>
+</body>
+</html>

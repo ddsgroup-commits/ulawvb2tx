@@ -1,0 +1,605 @@
+// =============================================================
+// ULAW VB2 Portal – Prisma Schema
+// Database: PostgreSQL 16
+// =============================================================
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ────────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN   // full system access, owner
+  ADMIN         // operational administrator
+  MODERATOR     // content reviewer / approver
+  CREATOR       // content creator (drafts only, needs approval)
+  STUDENT       // enrolled student (read-only access)
+  PENDING_USER  // newly registered, awaiting approval
+}
+
+// Content lifecycle status — used by Announcement, Video, LibraryItem
+enum ContentStatus {
+  DRAFT       // saved locally, not submitted
+  SUBMITTED   // submitted for review
+  APPROVED    // reviewed and approved (may auto-publish)
+  REJECTED    // reviewer rejected with reason
+  PUBLISHED   // live and visible to STUDENT+
+  ARCHIVED    // hidden from public, kept for record
+}
+
+enum AnnouncementTag {
+  LICH_HOC      // schedule
+  DEADLINE      // deadline
+  THAY_DOI      // change/update
+  THI_CU        // exam
+  CHUNG_CHI     // certificate
+  KHAC          // other
+}
+
+enum EventType {
+  CLASS
+  EXAM
+  DEADLINE
+  EVENT
+}
+
+enum LibraryCategory {
+  LEGAL_DOC     // Văn bản pháp luật
+  TEXTBOOK      // Giáo trình
+  PAST_EXAM     // Đề thi mẫu
+  LECTURE_NOTE  // Slide/ghi chú bài giảng (OCW-style)
+  SYLLABUS      // Đề cương môn học
+  READING       // Tài liệu đọc bổ trợ
+}
+
+enum BookmarkType {
+  LESSON
+  VIDEO
+  LIBRARY_ITEM
+  COURSE
+}
+
+enum CourseStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+}
+
+enum AssignmentStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  LATE
+  GRADED
+}
+
+enum VideoSource {
+  YOUTUBE
+  DRIVE
+  OTHER
+}
+
+enum LessonStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum LessonType {
+  VIDEO    // primarily a video lesson
+  READING  // text / document-based
+  QUIZ     // (future) quiz / self-test
+  MIXED    // video + reading + attachments
+}
+
+// ── Account / User (NextAuth compatible) ─────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          Role      @default(PENDING_USER)
+  studentId     String?   @unique
+  phone         String?
+  bio           String?
+  isActive      Boolean   @default(true)
+  mustChangePassword Boolean @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts       Account[]
+  sessions       Session[]
+  announcements  Announcement[]    @relation("AnnouncementAuthor")
+  events         Event[]           @relation("EventCreator")
+  libraryItems   LibraryItem[]     @relation("LibraryItemUploader")
+  attendances    Attendance[]
+  submissions    Submission[]
+  auditLogs      AuditLog[]        @relation("AuditActor")
+  lecturedCourses Course[]         @relation("CourseLecturer")
+  sentInvitations AdminInvitation[] @relation("InvitationSender")
+  uploadedVideos      Video[]                @relation("VideoUploader")
+  lessonProgress      LessonProgress[]
+  lessonNotes         LessonNote[]
+  bookmarks           Bookmark[]
+  googleCalendarToken GoogleCalendarToken?
+  submittedApprovals  ContentApproval[]     @relation("ContentSubmitter")
+  reviewedApprovals   ContentApproval[]     @relation("ContentReviewer")
+
+  @@index([email])
+  @@index([role])
+  @@index([studentId])
+}
+
+// ── Content Approval Workflow ─────────────────────────────────
+// Tracks the approval lifecycle for any content type.
+// contentType: "Announcement" | "Video" | "LibraryItem"
+
+model ContentApproval {
+  id              String        @id @default(cuid())
+  contentType     String        // "Announcement", "Video", "LibraryItem"
+  contentId       String
+  status          ContentStatus @default(SUBMITTED)
+  submittedById   String
+  reviewedById    String?
+  reviewedAt      DateTime?
+  rejectionReason String?       @db.Text
+  revisionNote    String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  submittedBy User  @relation("ContentSubmitter", fields: [submittedById], references: [id])
+  reviewedBy  User? @relation("ContentReviewer", fields: [reviewedById], references: [id])
+
+  @@index([contentType, contentId])
+  @@index([status])
+  @@index([submittedById])
+  @@index([createdAt(sort: Desc)])
+}
+
+// ── Announcement ─────────────────────────────────────────────
+
+model Announcement {
+  id            String          @id @default(cuid())
+  title         String
+  content       String          @db.Text
+  tag           AnnouncementTag @default(KHAC)
+  authorId      String
+  pinned        Boolean         @default(false)
+  urgent        Boolean         @default(false)
+  published     Boolean         @default(true)  // legacy; use contentStatus for new code
+  contentStatus ContentStatus   @default(PUBLISHED)
+  publishAt     DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  author User @relation("AnnouncementAuthor", fields: [authorId], references: [id])
+
+  @@index([authorId])
+  @@index([createdAt(sort: Desc)])
+  @@index([pinned])
+  @@index([publishAt])
+  @@index([contentStatus])
+}
+
+// ── Academic Calendar / Events ───────────────────────────────
+
+model Event {
+  id          String    @id @default(cuid())
+  title       String
+  date        DateTime
+  endDate     DateTime?
+  type        EventType @default(CLASS)
+  time        String?
+  room        String?
+  description String?   @db.Text
+  courseId              String?
+  creatorId             String
+  googleCalendarEventId String?
+  onlineLink            String?
+  subject               String?
+  reminderMinutes       Int?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  course    Course?    @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  creator   User       @relation("EventCreator", fields: [creatorId], references: [id])
+  attendances Attendance[]
+
+  @@index([date])
+  @@index([type])
+  @@index([courseId])
+}
+
+// ── Course ───────────────────────────────────────────────────
+
+model Course {
+  id            String       @id @default(cuid())
+  slug          String       @unique
+  code          String       @unique
+  name          String
+  credits       Int          @default(3)
+  icon          String?
+  description   String?      @db.Text
+  lecturerId    String?
+  notebooklmUrl String?
+  driveUrl      String?
+  status        CourseStatus @default(UPCOMING)
+  order         Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  lecturer    User?        @relation("CourseLecturer", fields: [lecturerId], references: [id], onDelete: SetNull)
+  events      Event[]
+  libraryItems LibraryItem[]
+  assignments  Assignment[]
+  videos      Video[]
+  lessons     Lesson[]
+
+  @@index([status])
+  @@index([slug])
+}
+
+// ── Library ──────────────────────────────────────────────────
+
+model LibraryItem {
+  id            String          @id @default(cuid())
+  title         String
+  category      LibraryCategory
+  description   String?
+  fileUrl       String?
+  driveId       String?
+  courseId      String?
+  uploaderId    String
+  isPublic      Boolean         @default(true)
+  downloadCount Int             @default(0)
+  contentStatus ContentStatus   @default(PUBLISHED)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  uploader User    @relation("LibraryItemUploader", fields: [uploaderId], references: [id])
+
+  @@index([category])
+  @@index([courseId])
+  @@index([contentStatus])
+}
+
+// ── FAQ ──────────────────────────────────────────────────────
+
+model FAQ {
+  id         String   @id @default(cuid())
+  category   String
+  question   String
+  answer     String   @db.Text
+  order      Int      @default(0)
+  isPublic   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([category])
+}
+
+// ── Contact / Class Directory ────────────────────────────────
+
+model Contact {
+  id        String   @id @default(cuid())
+  name      String
+  role      String
+  email     String?
+  groupName String?
+  note      String?
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ── Attendance ───────────────────────────────────────────────
+
+model Attendance {
+  id        String   @id @default(cuid())
+  userId    String
+  eventId   String
+  present   Boolean  @default(false)
+  note      String?
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
+}
+
+// ── Assignment ───────────────────────────────────────────────
+
+model Assignment {
+  id          String           @id @default(cuid())
+  title       String
+  description String?          @db.Text
+  courseId    String
+  dueDate     DateTime
+  status      AssignmentStatus @default(DRAFT)
+  fileUrl     String?
+  maxScore    Float?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+
+  @@index([courseId])
+  @@index([dueDate])
+}
+
+// ── Submission ───────────────────────────────────────────────
+
+model Submission {
+  id           String           @id @default(cuid())
+  assignmentId String
+  userId       String
+  fileUrl      String?
+  note         String?
+  score        Float?
+  status       SubmissionStatus @default(SUBMITTED)
+  submittedAt  DateTime         @default(now())
+  gradedAt     DateTime?
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, userId])
+  @@index([userId])
+  @@index([assignmentId])
+}
+
+// ── Audit Log ────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  actorRole  String?  // role of actor at time of action
+  action     String
+  entityType String
+  entityId   String?
+  oldValue   Json?    // previous state snapshot
+  newValue   Json?    // new state snapshot
+  meta       Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  user User @relation("AuditActor", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@index([action])
+}
+
+// ── Admin Invitation ─────────────────────────────────────────
+
+model AdminInvitation {
+  id          String    @id @default(cuid())
+  email       String
+  role        Role      @default(CREATOR)
+  token       String    @unique @default(cuid())
+  expiresAt   DateTime
+  usedAt      DateTime?
+  invitedById String
+  note        String?
+  createdAt   DateTime  @default(now())
+
+  inviter User @relation("InvitationSender", fields: [invitedById], references: [id])
+
+  @@index([email])
+  @@index([token])
+  @@index([invitedById])
+}
+
+// ── Site Config ──────────────────────────────────────────────
+
+model SiteConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+}
+
+// ── Lesson (LMS / E-learning) ────────────────────────────────
+
+model Lesson {
+  id           String       @id @default(cuid())
+  courseId     String
+  order        Int          @default(0)
+  title        String
+  slug         String
+  type         LessonType   @default(VIDEO)
+  description  String?      @db.Text
+  content      String?      @db.Text
+  videoUrl     String?      @db.Text
+  videoSource  VideoSource?
+  videoEmbed   String?      @db.Text
+  thumbnailUrl String?      @db.Text
+  attachments  String[]     @default([])
+  durationMin  Int?
+  status       LessonStatus @default(PUBLISHED)
+  isPreview    Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  course   Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress LessonProgress[]
+  notes    LessonNote[]
+
+  @@unique([courseId, slug])
+  @@index([courseId, order])
+  @@index([status])
+}
+
+// ── Personal lesson notes (per-student) ──────────────────────
+
+model LessonNote {
+  id        String   @id @default(cuid())
+  lessonId  String
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, userId])
+  @@index([userId, updatedAt(sort: Desc)])
+}
+
+// ── Bookmarks (polymorphic favorites) ────────────────────────
+
+model Bookmark {
+  id        String       @id @default(cuid())
+  userId    String
+  type      BookmarkType
+  itemId    String
+  note      String?
+  createdAt DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, itemId])
+  @@index([userId, type])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model LessonProgress {
+  id           String    @id @default(cuid())
+  lessonId     String
+  userId       String
+  completed    Boolean   @default(false)
+  completedAt  DateTime?
+  watchTimeSec Int       @default(0)
+  lastViewedAt DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, userId])
+  @@index([userId])
+  @@index([lessonId])
+  @@index([completed])
+  @@index([lastViewedAt(sort: Desc)])
+}
+
+// ── Video Library ────────────────────────────────────────────
+
+model Video {
+  id              String        @id @default(cuid())
+  title           String
+  description     String?       @db.Text
+  subject         String?
+  courseId        String?
+  lecturer        String?
+  classDate       DateTime?
+  durationSeconds Int?
+  source          VideoSource   @default(YOUTUBE)
+  url             String        @db.Text
+  embedUrl        String?       @db.Text
+  thumbnailUrl    String?       @db.Text
+  tags            String[]      @default([])
+  relatedDocs     String[]      @default([])
+  contentStatus   ContentStatus @default(PUBLISHED)
+  pinned          Boolean       @default(false)
+  viewCount       Int           @default(0)
+  uploaderId      String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  uploader User    @relation("VideoUploader", fields: [uploaderId], references: [id])
+
+  @@index([contentStatus])
+  @@index([courseId])
+  @@index([classDate(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@index([pinned])
+}
+
+// ── Google Calendar OAuth Token ──────────────────────────────
+
+model GoogleCalendarToken {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  accessToken   String    @db.Text
+  refreshToken  String?   @db.Text
+  expiresAt     DateTime?
+  scope         String?
+  calendarId    String?
+  lastSyncAt    DateTime?
+  lastSyncError String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([lastSyncAt])
+}
