@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Upload, Loader2, CheckCircle2, AlertTriangle, FileText } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 
 type ImportResult = {
   ok: boolean;

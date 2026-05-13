@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/Button";
-import { Input, Select } from "@/components/ui/Input";
-import { Modal } from "@/components/ui/Modal";
-import { EventTypeBadge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/button";
+import { Input, Select } from "@/components/ui/input";
+import { Modal } from "@/components/ui/dialog";
+import { EventTypeBadge } from "@/components/ui/badge";
 import { formatDateVi, EVENT_TYPE_LABELS } from "@/lib/utils";
 import { Plus, Trash2, Calendar, Loader2, CheckCircle2, AlertCircle, Users } from "lucide-react";
 import type { EventType } from "@prisma/client";

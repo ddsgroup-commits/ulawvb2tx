@@ -20,7 +20,7 @@ import {
   AlertTriangle,
   Settings2,
 } from "lucide-react";
-import { Input } from "@/components/ui/Input";
+import { Input } from "@/components/ui/input";
 
 interface Flags {
   // booleans
@@ -42,6 +42,8 @@ interface Flags {
   contactEmail: string;
   zaloGroupUrl: string;
   googleCalendarUrl: string;
+  attendanceUrl: string;
+  googleDriveUrl: string;
   maintenanceMessage: string;
   topBannerText: string;
 }
@@ -278,6 +280,20 @@ export default function ControlPanelPage() {
             value={draft.googleCalendarUrl}
             onChange={(e) => patchDraft("googleCalendarUrl", e.target.value)}
             placeholder="https://calendar.google.com/…"
+          />
+          <Input
+            label="Form điểm danh (URL)"
+            type="url"
+            value={draft.attendanceUrl}
+            onChange={(e) => patchDraft("attendanceUrl", e.target.value)}
+            placeholder="https://docs.google.com/forms/…"
+          />
+          <Input
+            label="Google Drive lớp (URL)"
+            type="url"
+            value={draft.googleDriveUrl}
+            onChange={(e) => patchDraft("googleDriveUrl", e.target.value)}
+            placeholder="https://drive.google.com/…"
           />
         </div>
       </section>

@@ -32,6 +32,8 @@ export interface FeatureFlags {
   contactEmail: string;
   zaloGroupUrl: string;
   googleCalendarUrl: string;
+  attendanceUrl: string;
+  googleDriveUrl: string;
 
   // ── Notices ──────────────────────────────────────────────
   maintenanceMessage: string;
@@ -55,7 +57,9 @@ const DEFAULTS: FeatureFlags = {
   semester: "Học kỳ I – 2026",
   contactEmail: "vb2luat2025@gmail.com",
   zaloGroupUrl: "",
-  googleCalendarUrl: "https://calendar.google.com",
+  googleCalendarUrl: "https://calendar.google.com/calendar/u/0?cid=YTc5NWI4NjZhYTMyMTc2OTM3NTUzZTlhN2FiYTFmYTYyYmFlMTA4NDRmZTRkY2E1ZTQwZmUyM2JlNTQzOTExMEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t",
+  attendanceUrl: "https://docs.google.com/forms/d/e/1FAIpQLSc5GnrHF6lxWStYq1ZbZAufMWfyztKUqhBbkOMCODos6Kgn-g/viewform?pli=1&fbzx=7648764533728581110",
+  googleDriveUrl: "https://drive.google.com/drive/folders/1BXN3PSRTnlMf4g5xmAR8U471hIsbnMoI?usp=drive_link",
   maintenanceMessage: "Hệ thống đang bảo trì. Vui lòng quay lại sau ít phút.",
   topBannerText: "",
 };
@@ -81,6 +85,8 @@ const STRING_KEYS: ReadonlyArray<keyof FeatureFlags> = [
   "contactEmail",
   "zaloGroupUrl",
   "googleCalendarUrl",
+  "attendanceUrl",
+  "googleDriveUrl",
   "maintenanceMessage",
   "topBannerText",
 ] as const;
@@ -111,9 +117,9 @@ export async function getFlags(): Promise<FeatureFlags> {
     if (!(r.key in DEFAULTS)) continue;
     const key = r.key as keyof FeatureFlags;
     if (isBooleanFlag(key)) {
-      (flags as Record<keyof FeatureFlags, boolean | string>)[key] = r.value === "true";
+      (flags as any)[key] = r.value === "true";
     } else if (isStringFlag(key)) {
-      (flags as Record<keyof FeatureFlags, boolean | string>)[key] = r.value;
+      (flags as any)[key] = r.value;
     }
   }
   cache = { value: flags, loadedAt: Date.now() };

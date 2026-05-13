@@ -8,6 +8,7 @@ import { RegisterServiceWorker } from "@/components/pwa/register-sw";
 const inter = Inter({ subsets: ["latin", "vietnamese"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://ulawvb2tx.com"),
   title: {
     default: "ULAW VB2-TX LMS",
     template: "%s | ULAW VB2-TX",

@@ -3,8 +3,8 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ShieldCheck, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {

@@ -294,6 +294,8 @@ export default async function DashboardPage() {
                 { icon: "👥", label: "Danh bạ lớp", href: "/portal/classmates" },
                 { icon: "❓", label: "FAQ", href: "/portal/faq" },
                 { icon: "🌐", label: "ULAW eLearning", href: "http://elearning.hcmulaw.edu.vn", external: true },
+                { icon: "📝", label: "Điểm danh", href: config?.attendanceUrl ?? "https://docs.google.com/forms/d/e/1FAIpQLSc5GnrHF6lxWStYq1ZbZAufMWfyztKUqhBbkOMCODos6Kgn-g/viewform?pli=1&fbzx=7648764533728581110", external: true },
+                { icon: "📂", label: "Google Drive lớp", href: config?.googleDriveUrl ?? "https://drive.google.com/drive/folders/1BXN3PSRTnlMf4g5xmAR8U471hIsbnMoI?usp=drive_link", external: true },
               ].map(l => (
                 <a key={l.label}
                   href={l.href}

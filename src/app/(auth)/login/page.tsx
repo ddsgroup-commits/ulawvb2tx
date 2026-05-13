@@ -167,7 +167,12 @@ function LoginPageInner() {
             </div>
 
             <div className="input-group">
-              <label className="label">Mật khẩu</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="label !mb-0">Mật khẩu</label>
+                <Link href="/forgot-password" className="text-[11px] text-navy/70 hover:text-navy transition-colors">
+                  Quên mật khẩu?
+                </Link>
+              </div>
               <input
                 type="password"
                 value={password}
@@ -203,7 +208,14 @@ function LoginPageInner() {
             </p>
           </div>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center text-sm text-slate-500">
+            Chưa có tài khoản?{" "}
+            <Link href="/register" className="text-navy font-semibold hover:underline">
+              Đăng ký ngay
+            </Link>
+          </div>
+
+          <div className="mt-3 text-center">
             <Link href="/" className="text-xs text-slate-400 hover:text-navy transition-colors">
               ← Quay về trang chủ
             </Link>

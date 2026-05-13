@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { cn, CONTENT_STATUS_LABELS, CONTENT_STATUS_COLORS, ROLE_LABELS, formatDateVi } from "@/lib/utils";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/dialog";
 import {
   CheckCircle, XCircle, MessageSquare, Eye, RefreshCw,
   ChevronLeft, ChevronRight, FileText, Film, Library, Megaphone,

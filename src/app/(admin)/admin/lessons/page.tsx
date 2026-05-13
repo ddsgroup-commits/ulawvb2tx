@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Input, Select } from "@/components/ui/Input";
-import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/button";
+import { Input, Select } from "@/components/ui/input";
+import { Modal } from "@/components/ui/dialog";
 import {
   Plus,
   Trash2,

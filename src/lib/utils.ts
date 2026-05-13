@@ -145,6 +145,8 @@ export function slugifyVi(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+export const slugify = slugifyVi;
+
 /** Parse pagination params from URL */
 export function parsePagination(searchParams: URLSearchParams, defaultPageSize = 20) {
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));

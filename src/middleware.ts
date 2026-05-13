@@ -29,7 +29,7 @@ const ROUTE_ACCESS: Record<string, string[]> = {
   "/pending":       ["SUPER_ADMIN", "ADMIN", "MODERATOR", "CREATOR", "LECTURER", "STUDENT", "PENDING_USER"],
 };
 
-const PUBLIC_ROUTES = ["/", "/login", "/api/auth", "/api/config"];
+const PUBLIC_ROUTES = ["/", "/login", "/register", "/api/auth", "/api/config"];
 
 export default auth((req: NextRequest & { auth: { user?: { role?: string } } | null }) => {
   const { pathname } = req.nextUrl;

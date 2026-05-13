@@ -12,7 +12,7 @@ set -e
 # prefer the hostname.
 VPS_HOST="${VPS_HOST:-root@213.190.4.75}"
 PUBLIC_HOST="ulawvb2tx.com"
-REMOTE_DIR="/opt/ulaw-lms"
+REMOTE_DIR="/var/ulaw/ulaw-lms-v2"
 ENV_FILE=".env.prod"
 
 RED='\033[0;31m'
@@ -62,7 +62,7 @@ info "Running remote deployment..."
 
 ssh "$VPS_HOST" bash <<'REMOTE'
 set -e
-cd /opt/ulaw-lms
+cd /var/ulaw/ulaw-lms-v2
 
 echo "[REMOTE] Installing Docker if needed..."
 if ! command -v docker &>/dev/null; then

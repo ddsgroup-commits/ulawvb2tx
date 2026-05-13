@@ -37,8 +37,6 @@ const nextConfig: NextConfig = {
       allowedOrigins: [
         "localhost:3000",
         "ulawvb2tx.com",
-        "www.ulawvb2tx.com",
-        "portal.srv1559779.hstgr.cloud",
       ],
     },
   },
