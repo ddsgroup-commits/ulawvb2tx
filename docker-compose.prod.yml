@@ -1,41 +1,19 @@
-version: "3.9"
-
 # ======================================================
-# ULAW LMS v2 — Production Docker Compose
-# Domain: ulawvb2tx.com
+#  ULAW LMS v2 — Production Docker Compose
+#  Domain:  ulawvb2tx.com (apex) + www.ulawvb2tx.com → apex
+#
+#  Assumes a *global* Traefik is already running on the host
+#  (e.g. /docker/traefik with network_mode: host + docker-socket
+#  provider). We do NOT start our own traefik here — the global
+#  one auto-discovers this stack via the labels on the `app`
+#  service and routes ulawvb2tx.com → app:3000.
 # ======================================================
 
 networks:
-  ulaw_proxy:
-    external: true
   ulaw_internal:
     driver: bridge
 
 services:
-  traefik:
-    image: traefik:v3.2
-    restart: unless-stopped
-    command:
-      - --api.insecure=false
-      - --providers.docker=true
-      - --providers.docker.exposedbydefault=false
-      - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
-      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
-      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
-      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@ulaw.edu.vn}
-      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
-      - --entrypoints.web.http.redirections.entrypoint.to=websecure
-      - --entrypoints.web.http.redirections.entrypoint.scheme=https
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - letsencrypt:/letsencrypt
-    networks:
-      - ulaw_proxy
-
   db:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -53,9 +31,14 @@ services:
       timeout: 5s
       retries: 5
 
+  # One-shot migration runner. Uses the `builder` stage so the full
+  # node_modules tree (including the Prisma CLI) is available — the
+  # runner stage strips node_modules to keep the prod image lean.
   migrate:
-    build: .
-    command: npx prisma migrate deploy
+    build:
+      context: .
+      target: builder
+    command: ["sh", "-c", "node_modules/.bin/prisma migrate deploy"]
     depends_on:
       db:
         condition: service_healthy
@@ -71,32 +54,59 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       DATABASE_URL: postgresql://ulaw_user:${POSTGRES_PASSWORD}@db:5432/ulaw_lms
+      # NextAuth — accept both legacy v4 and v5 secret env names
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-      NEXTAUTH_URL: https://ulawvb2tx.com
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      AUTH_SECRET:    ${AUTH_SECRET:-${NEXTAUTH_SECRET}}
+      NEXTAUTH_URL:    https://ulawvb2tx.com
+      AUTH_TRUST_HOST: "true"
+      # Token encryption at rest (CalendarSync etc.)
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      # Google OAuth (optional)
+      GOOGLE_CLIENT_ID:     ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      # Gemini AI
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      # Web Push (VAPID)
+      VAPID_PUBLIC_KEY:             ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY:            ${VAPID_PRIVATE_KEY:-}
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
+      VAPID_SUBJECT:                ${VAPID_SUBJECT:-mailto:admin@ulawvb2tx.com}
+      # SMTP (optional)
+      SMTP_HOST:   ${SMTP_HOST:-}
+      SMTP_PORT:   ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER:   ${SMTP_USER:-}
+      SMTP_PASS:   ${SMTP_PASS:-}
+      SMTP_FROM:   ${SMTP_FROM:-ULAW VB2-TX <noreply@ulawvb2tx.com>}
+      # App
+      NEXT_PUBLIC_APP_URL: https://ulawvb2tx.com
       NODE_ENV: production
+    volumes:
+      - /var/ulaw-uploads:/app/uploads
     networks:
-      - ulaw_proxy
       - ulaw_internal
     labels:
       - traefik.enable=true
-      # Accept both apex and www variants — Traefik routes either to the
-      # same service. www → apex is enforced by the redirect middleware.
-      - traefik.http.routers.ulaw-lms.rule=Host(`ulawvb2tx.com`) || Host(`www.ulawvb2tx.com`)
+      # Tell Traefik which docker network to use for backend
+      # connections (we only have one but be explicit for clarity).
+      - traefik.docker.network=ulaw-lms-v2_ulaw_internal
+      # Routing: apex + www both hit the same service.
+      - "traefik.http.routers.ulaw-lms.rule=Host(`ulawvb2tx.com`) || Host(`www.ulawvb2tx.com`)"
       - traefik.http.routers.ulaw-lms.entrypoints=websecure
+      - traefik.http.routers.ulaw-lms.tls=true
       - traefik.http.routers.ulaw-lms.tls.certresolver=letsencrypt
-      - traefik.http.routers.ulaw-lms.tls.domains[0].main=ulawvb2tx.com
-      - traefik.http.routers.ulaw-lms.tls.domains[0].sans=www.ulawvb2tx.com
+      - "traefik.http.routers.ulaw-lms.tls.domains[0].main=ulawvb2tx.com"
+      - "traefik.http.routers.ulaw-lms.tls.domains[0].sans=www.ulawvb2tx.com"
       - traefik.http.services.ulaw-lms.loadbalancer.server.port=3000
-      # Redirect www → apex to keep cookies on a single host.
-      - traefik.http.middlewares.www-to-apex.redirectregex.regex=^https://www\.ulawvb2tx\.com/(.*)
-      - traefik.http.middlewares.www-to-apex.redirectregex.replacement=https://ulawvb2tx.com/$${1}
+      # www → apex redirect to keep cookies on a single host.
+      - "traefik.http.middlewares.www-to-apex.redirectregex.regex=^https://www\\.ulawvb2tx\\.com/(.*)"
+      - "traefik.http.middlewares.www-to-apex.redirectregex.replacement=https://ulawvb2tx.com/$$1"
       - traefik.http.middlewares.www-to-apex.redirectregex.permanent=true
       - traefik.http.routers.ulaw-lms.middlewares=www-to-apex@docker
 
 volumes:
   pgdata:
-  letsencrypt:

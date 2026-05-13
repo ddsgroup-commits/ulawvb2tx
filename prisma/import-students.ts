@@ -38,7 +38,7 @@ const dryRun = !!args["dry-run"];
 const resetPasswords = !!args["reset-passwords"];
 const bcryptCost = Number(process.env.BCRYPT_COST ?? 12);
 
-const ADMIN_MSSV = new Set(["2543801010228", "2543801010147"]);
+const ADMIN_MSSV = new Set<string>([]); // roles now driven entirely by CSV
 const STUDENT_EMAIL_DOMAIN =
   process.env.STUDENT_EMAIL_DOMAIN ?? "email.hcmulaw.edu.vn";
 
@@ -124,7 +124,7 @@ async function main() {
           where: { id: existing.id },
           data: {
             name: row.fullName,
-            studentId: row.mssv,
+            mssv: row.mssv,
             role: row.role,
             isActive: true,
             passwordHash,
@@ -138,7 +138,7 @@ async function main() {
           data: {
             email: row.email,
             name: row.fullName,
-            studentId: row.mssv,
+            mssv: row.mssv,
             role: row.role,
             isActive: true,
             passwordHash,
