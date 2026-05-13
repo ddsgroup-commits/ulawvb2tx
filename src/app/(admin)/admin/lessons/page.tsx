@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input, Select } from "@/components/ui/input";
-import { Modal } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Modal, SimpleSelect } from "@/components/ui/simple-ui";
 import {
   Plus,
   Trash2,
@@ -238,7 +238,7 @@ export default function AdminLessonsPage() {
         </div>
         <div className="flex gap-2 items-center">
           <div className="w-56">
-            <Select
+            <SimpleSelect
               value={filterCourse}
               options={courseFilterOpts}
               onChange={(e) => setFilterCourse(e.target.value)}
@@ -362,7 +362,7 @@ export default function AdminLessonsPage() {
         size="lg"
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Select
+          <SimpleSelect
             label="Môn học"
             value={form.courseId}
             options={courseCreateOpts}
@@ -371,38 +371,44 @@ export default function AdminLessonsPage() {
             disabled={!!editingId}
           />
 
-          <Input
-            label="Tiêu đề bài học"
-            value={form.title}
-            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            placeholder="VD: Buổi 1 — Khái niệm Nhà nước"
-            required
-          />
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Tiêu đề bài học</label>
+            <Input
+              value={form.title}
+              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+              placeholder="VD: Buổi 1 — Khái niệm Nhà nước"
+              required
+            />
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Select
+            <SimpleSelect
               label="Loại bài"
               value={form.type}
               options={TYPE_OPTS}
               onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as LessonType }))}
             />
-            <Input
-              label="Thời lượng (phút)"
-              type="number"
-              min="1"
-              value={form.durationMin}
-              onChange={(e) => setForm((f) => ({ ...f, durationMin: e.target.value }))}
-              placeholder="VD: 90"
-            />
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Thời lượng (phút)</label>
+              <Input
+                type="number"
+                min="1"
+                value={form.durationMin}
+                onChange={(e) => setForm((f) => ({ ...f, durationMin: e.target.value }))}
+                placeholder="VD: 90"
+              />
+            </div>
           </div>
 
-          <Input
-            label="URL video (YouTube hoặc Google Drive — tuỳ chọn)"
-            type="url"
-            value={form.videoUrl}
-            onChange={(e) => setForm((f) => ({ ...f, videoUrl: e.target.value }))}
-            placeholder="https://www.youtube.com/watch?v=…"
-          />
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider">URL video (YouTube hoặc Drive)</label>
+            <Input
+              type="url"
+              value={form.videoUrl}
+              onChange={(e) => setForm((f) => ({ ...f, videoUrl: e.target.value }))}
+              placeholder="https://www.youtube.com/watch?v=…"
+            />
+          </div>
 
           <div>
             <label className="label">Mô tả ngắn</label>
@@ -434,7 +440,7 @@ export default function AdminLessonsPage() {
             />
           </div>
 
-          <Select
+          <SimpleSelect
             label="Trạng thái"
             value={form.status}
             options={STATUS_OPTS}

@@ -47,44 +47,37 @@ export const authConfig: NextAuthConfig = {
   ],
 
   callbacks: {
-    async signIn({ user, account }) {
-      // Handle Google sign-in: match by email
-      if (account?.provider === "google") {
-        const existing = await prisma.user.findUnique({
-          where: { email: user.email! },
-        });
-
-        if (!existing) {
-          // New Google user — create as PENDING
-          await prisma.user.create({
-            data: {
-              email: user.email!,
-              name: user.name ?? null,
-              role: "PENDING_USER",
-              googleLinked: true,
-            },
-          });
-        } else if (!existing.googleLinked) {
-          await prisma.user.update({
-            where: { id: existing.id },
-            data: { googleLinked: true },
-          });
-        }
-        return true;
-      }
+    async signIn({ account }) {
+      // Let PrismaAdapter handle user + account creation for Google.
+      // Only block credentials sign-ins for inactive accounts (handled below).
+      if (account?.provider === "google") return true;
       return true;
     },
 
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
         token.role = (user as { role?: string }).role;
       }
 
-      // Always refresh role from DB on JWT creation (not every request for perf)
-      if (token.id && !token.role) {
+      // On first sign-in or when role is missing, fetch from DB.
+      if (token.id && (!token.role || trigger === "signIn")) {
         const dbUser = await prisma.user.findUnique({ where: { id: token.id as string } });
-        if (dbUser) token.role = dbUser.role;
+        if (dbUser) {
+          // Auto-promote owner email to SUPER_ADMIN on first Google login.
+          if (
+            dbUser.email === "linhtran.business@gmail.com" &&
+            (dbUser.role === "PENDING_USER" || !dbUser.role)
+          ) {
+            await prisma.user.update({
+              where: { id: dbUser.id },
+              data: { role: "SUPER_ADMIN", isActive: true, googleLinked: true },
+            });
+            token.role = "SUPER_ADMIN";
+          } else {
+            token.role = dbUser.role;
+          }
+        }
       }
 
       return token;

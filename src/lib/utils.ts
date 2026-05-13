@@ -134,6 +134,40 @@ export const CONTENT_STATUS_LABELS: Record<string, string> = {
   ARCHIVED: "Lưu trữ",
 };
 
+export const CONTENT_STATUS_COLORS: Record<string, string> = {
+  DRAFT: "bg-slate-100 text-slate-600",
+  SUBMITTED: "bg-amber-100 text-amber-700",
+  UNDER_REVIEW: "bg-blue-100 text-blue-700",
+  APPROVED: "bg-emerald-100 text-emerald-700",
+  REJECTED: "bg-rose-100 text-rose-700",
+  PUBLISHED: "bg-green-100 text-green-700",
+  ARCHIVED: "bg-gray-100 text-gray-600",
+};
+
+export const EVENT_TYPE_COLORS: Record<string, string> = {
+  EXAM: "bg-red-100 text-red-700",
+  DEADLINE: "bg-amber-100 text-amber-700",
+  CLASS: "bg-navy/10 text-navy",
+  MAKEUP: "bg-purple-100 text-purple-700",
+  OTHER: "bg-slate-100 text-slate-700",
+};
+
+export function relativeTime(date: Date | string | null | undefined): string {
+  if (!date) return "—";
+  const d = typeof date === "string" ? new Date(date) : date;
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const sec = Math.floor(diff / 1000);
+  if (sec < 60) return "vừa xong";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min} phút trước`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} giờ trước`;
+  const day = Math.floor(hr / 24);
+  if (day < 30) return `${day} ngày trước`;
+  return d.toLocaleDateString("vi-VN");
+}
+
 /** Slugify Vietnamese text */
 export function slugifyVi(text: string): string {
   return text
