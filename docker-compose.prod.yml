@@ -31,14 +31,23 @@ services:
       timeout: 5s
       retries: 5
 
-  # One-shot migration runner. Uses the `builder` stage so the full
+  # One-shot schema sync. Uses the `builder` stage so the full
   # node_modules tree (including the Prisma CLI) is available — the
   # runner stage strips node_modules to keep the prod image lean.
+  #
+  # We use `db push` instead of `migrate deploy` because the original
+  # `001_initial` migration file in the repo is empty (v2.0 used
+  # `prisma db push` in dev rather than capturing a baseline). On a
+  # fresh database the second migration then fails because the enums
+  # it references don't exist yet. `db push` is idempotent and works
+  # against an empty DB or an existing one. When the team needs proper
+  # migration history later, run `prisma migrate dev --name baseline`
+  # locally against a copy of prod to capture a real baseline.
   migrate:
     build:
       context: .
       target: builder
-    command: ["sh", "-c", "node_modules/.bin/prisma migrate deploy"]
+    command: ["sh", "-c", "node_modules/.bin/prisma db push --accept-data-loss"]
     depends_on:
       db:
         condition: service_healthy
