@@ -3,7 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
-import { slugifyVi } from "@/lib/utils";
+import { slugify } from "@/lib/utils";
 import { parseVideoUrl } from "@/lib/video";
 
 // ── GET /api/lessons ──────────────────────────────────────────
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     const parsed = data.videoUrl ? parseVideoUrl(data.videoUrl) : null;
 
     // Derive a unique slug per course; append a numeric suffix on collision.
-    const base = data.slug?.trim() ? slugifyVi(data.slug) : slugifyVi(data.title);
+    const base = data.slug?.trim() ? slugify(data.slug) : slugify(data.title);
     let slug = base;
     for (let i = 2; i < 100; i++) {
       const existing = await prisma.lesson.findUnique({

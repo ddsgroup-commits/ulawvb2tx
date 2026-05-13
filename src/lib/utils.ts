@@ -135,7 +135,7 @@ export const CONTENT_STATUS_LABELS: Record<string, string> = {
 };
 
 /** Slugify Vietnamese text */
-export function slugify(text: string): string {
+export function slugifyVi(text: string): string {
   return text
     .toLowerCase()
     .normalize("NFD")

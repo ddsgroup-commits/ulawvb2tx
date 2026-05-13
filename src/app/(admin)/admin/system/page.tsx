@@ -88,7 +88,7 @@ export default async function AdminSystemPage() {
     prisma.auditLog.findMany({
       orderBy: { createdAt: "desc" },
       take: 12,
-      include: { user: { select: { name: true } } },
+      include: { actor: { select: { name: true } } },
     }),
   ]);
 
@@ -249,10 +249,10 @@ export default async function AdminSystemPage() {
                     <td className="px-4 py-2 text-xs text-slate-500 whitespace-nowrap">
                       {formatDate(a.createdAt)}
                     </td>
-                    <td className="px-4 py-2 text-xs">{a.user?.name ?? "(system)"}</td>
+                    <td className="px-4 py-2 text-xs">{a.actor?.name ?? "(system)"}</td>
                     <td className="px-4 py-2 text-xs font-mono">{a.action}</td>
                     <td className="px-4 py-2 text-xs text-slate-500">
-                      {a.entityType}
+                      {a.entity}
                       {a.entityId && (
                         <span className="ml-1 font-mono text-slate-400">#{a.entityId.slice(0, 8)}</span>
                       )}

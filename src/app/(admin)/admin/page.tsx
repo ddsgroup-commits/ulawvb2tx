@@ -16,7 +16,7 @@ export default async function AdminDashboardPage() {
     prisma.libraryItem.count(),
     prisma.course.count(),
     prisma.auditLog.findMany({
-      include: { user: { select: { name: true } } },
+      include: { actor: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
       take: 10,
     }),
@@ -68,8 +68,8 @@ export default async function AdminDashboardPage() {
                 <div className="text-xs font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
                   {log.action}
                 </div>
-                <div className="text-xs text-slate-500">{log.entityType}</div>
-                <div className="text-xs text-slate-400 ml-auto">{log.user.name}</div>
+                <div className="text-xs text-slate-500">{log.entity}</div>
+                <div className="text-xs text-slate-400 ml-auto">{log.actor?.name ?? "System"}</div>
               </div>
             ))
           )}

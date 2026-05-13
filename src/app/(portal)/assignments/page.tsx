@@ -56,7 +56,7 @@ export default async function StudentAssignmentsPage() {
       course: { select: { name: true, code: true, icon: true } },
       submissions: {
         where: { studentId: userId },
-        select: { score: number; submittedAt: Date } as any,
+        select: { score: true, submittedAt: true },
       },
     },
   });
