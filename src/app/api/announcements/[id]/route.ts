@@ -1,33 +1,61 @@
-import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { ok, err } from "@/lib/utils";
+import { apiHandler, ok, err } from "@/lib/api";
+import { announcementUpdateSchema, idSchema } from "@/lib/validation";
+import { PERMISSIONS } from "@/lib/permissions";
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session?.user) return err("Unauthorized", 401);
-  if (!["SUPER_ADMIN", "ADMIN"].includes(session.user.role)) return err("Forbidden", 403);
+export const GET = apiHandler({
+  auth: "required",
+  params: idSchema,
+  handler: async ({ params }) => {
+    const item = await prisma.announcement.findUnique({
+      where: { id: params.id },
+      include: {
+        author: { select: { name: true, image: true, role: true } },
+        course: { select: { code: true, name: true } },
+      },
+    });
+    if (!item) return err("Not found", 404);
+    return ok(item);
+  },
+});
 
-  const body = await req.json();
-  const item = await prisma.announcement.update({
-    where: { id: params.id },
-    data: {
-      ...(body.title !== undefined ? { title: body.title } : {}),
-      ...(body.body !== undefined ? { body: body.body } : {}),
-      ...(body.tags !== undefined ? { tags: body.tags } : {}),
-      ...(body.pinned !== undefined ? { pinned: body.pinned } : {}),
-      ...(body.published !== undefined ? { published: body.published } : {}),
-      ...(body.publishAt !== undefined ? { publishAt: new Date(body.publishAt) } : {}),
-    },
-  });
-  return ok(item);
-}
+export const PATCH = apiHandler({
+  auth: "required",
+  permission: PERMISSIONS.ANNOUNCEMENTS_MANAGE,
+  params: idSchema,
+  body: announcementUpdateSchema,
+  handler: async ({ session, params, body }) => {
+    const updated = await prisma.announcement.update({
+      where: { id: params.id },
+      data: body as any,
+    });
+    await prisma.auditLog.create({
+      data: {
+        actorId: session!.user!.id as string,
+        action: "CONTENT_PUBLISHED",
+        entity: "Announcement",
+        entityId: updated.id,
+        detail: { fields: Object.keys(body) },
+      },
+    });
+    return ok(updated);
+  },
+});
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session?.user) return err("Unauthorized", 401);
-  if (!["SUPER_ADMIN", "ADMIN"].includes(session.user.role)) return err("Forbidden", 403);
-
-  await prisma.announcement.delete({ where: { id: params.id } });
-  return ok({ deleted: params.id });
-}
+export const DELETE = apiHandler({
+  auth: "required",
+  permission: PERMISSIONS.CONTENT_DELETE,
+  params: idSchema,
+  handler: async ({ session, params }) => {
+    await prisma.announcement.delete({ where: { id: params.id } });
+    await prisma.auditLog.create({
+      data: {
+        actorId: session!.user!.id as string,
+        action: "CONTENT_DELETED",
+        entity: "Announcement",
+        entityId: params.id,
+      },
+    });
+    return ok({ deleted: true });
+  },
+});

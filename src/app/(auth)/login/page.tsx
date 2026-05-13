@@ -1,11 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
+// Next.js 15 requires `useSearchParams()` consumers to be wrapped in a
+// `<Suspense>` so the surrounding shell can prerender statically while
+// the query-string-dependent bits stream in. Without this, `next build`
+// fails the prerender check.
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginShell loading />}>
+      <LoginPageInner />
+    </Suspense>
+  );
+}
+
+function LoginShell({ loading }: { loading?: boolean }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 text-slate-400 text-sm">
+      {loading ? "Đang tải…" : null}
+    </div>
+  );
+}
+
+function LoginPageInner() {
   const router = useRouter();
   const params = useSearchParams();
   const callbackUrl = params.get("callbackUrl") ?? "/portal/dashboard";

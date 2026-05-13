@@ -4,19 +4,28 @@
 // ============================================================
 
 import Link from "next/link";
+import prisma from "@/lib/prisma";
+import { Megaphone, GraduationCap, PlayCircle, Book, Calendar, Users, HelpCircle, Lock } from "lucide-react";
 
-const QUICK_LINKS = [
-  { icon: "📢", label: "Thông báo", href: "/portal/announcements" },
-  { icon: "📅", label: "Lịch học & Deadline", href: "/portal/calendar" },
-  { icon: "📚", label: "6 Môn học", href: "/portal/courses" },
-  { icon: "🎬", label: "Video bài giảng", href: "/portal/videos" },
-  { icon: "🗂", label: "Thư viện tài liệu", href: "/portal/library" },
-  { icon: "👥", label: "Danh bạ lớp", href: "/portal/classmates" },
-  { icon: "❓", label: "FAQ", href: "/portal/faq" },
-  { icon: "🔐", label: "Đăng nhập Portal", href: "/login" },
+// This page pulls live announcements + courses from the DB, so it
+// must be rendered per-request rather than at build time. Without
+// `force-dynamic`, `next build` tries to prerender and fails when
+// DATABASE_URL points at an unreachable instance (e.g. CI builds).
+export const dynamic = "force-dynamic";
+
+// Fallback data if DB is empty
+const DEFAULT_QUICK_LINKS = [
+  { icon: <Megaphone className="w-4 h-4" />, label: "Thông báo", href: "/portal/announcements" },
+  { icon: <Calendar className="w-4 h-4" />, label: "Lịch học & Deadline", href: "/portal/calendar" },
+  { icon: <Book className="w-4 h-4" />, label: "6 Môn học", href: "/portal/courses" },
+  { icon: <PlayCircle className="w-4 h-4" />, label: "Video bài giảng", href: "/portal/videos" },
+  { icon: <Book className="w-4 h-4" />, label: "Thư viện tài liệu", href: "/portal/library" },
+  { icon: <Users className="w-4 h-4" />, label: "Danh bạ lớp", href: "/portal/classmates" },
+  { icon: <HelpCircle className="w-4 h-4" />, label: "FAQ", href: "/portal/faq" },
+  { icon: <Lock className="w-4 h-4" />, label: "Đăng nhập Portal", href: "/login" },
 ];
 
-const FEATURES = [
+const DEFAULT_FEATURES = [
   {
     icon: "🎓",
     title: "Canvas-style LMS",
@@ -49,23 +58,42 @@ const FEATURES = [
   },
 ];
 
-const COURSES = [
-  { icon: "⚖️", code: "LLNN", name: "Lý luận về Nhà nước và Pháp luật", credits: 3, status: "Đang học" },
-  { icon: "🏛️", code: "HP",   name: "Luật Hiến pháp", credits: 3, status: "Đang học" },
-  { icon: "📋", code: "HC",   name: "Luật Hành chính", credits: 3, status: "Đang học" },
-  { icon: "📜", code: "DS",   name: "Luật Dân sự – Tài sản & Thừa kế", credits: 4, status: "Đang học" },
-  { icon: "🧩", code: "LOGIC", name: "Logic học pháp lý", credits: 2, status: "Đang học" },
-  { icon: "📚", code: "LLPL", name: "Lý luận về Pháp luật", credits: 3, status: "Đang học" },
-];
-
-const STATS = [
+const DEFAULT_STATS = [
   { value: "6", label: "Môn học" },
   { value: "18", label: "Tín chỉ HKI" },
   { value: "100+", label: "Thành viên lớp" },
   { value: "24/7", label: "Học mọi lúc mọi nơi" },
 ];
 
-export default function PublicHomePage() {
+async function getSiteData() {
+  const [config, announcements, courses] = await Promise.all([
+    prisma.siteConfig.findFirst({ where: { id: "default" } }),
+    prisma.announcement.findMany({
+      where: { published: true },
+      orderBy: { createdAt: "desc" },
+      take: 3
+    }),
+    prisma.course.findMany({
+      where: { status: "ACTIVE" },
+      orderBy: { order: "asc" },
+      take: 6
+    })
+  ]);
+
+  return { config, announcements, courses };
+}
+
+export default async function PublicHomePage() {
+  const { config, announcements, courses } = await getSiteData();
+
+  // Map dynamic data or fallbacks
+  const stats = (config?.stats as any[]) || DEFAULT_STATS;
+  const features = (config?.features as any[]) || DEFAULT_FEATURES;
+  const quickLinks = (config?.quickLinks as any[]) || DEFAULT_QUICK_LINKS;
+  const siteName = config?.siteName || "ULAW VB2-TX";
+  const heroTitle = config?.heroTitle || "Văn bằng 2 Luật từ xa.";
+  const heroSubtitle = config?.heroSubtitle || "Học thuật chuẩn mực.";
+
   return (
     <div className="min-h-screen bg-white">
 
@@ -87,22 +115,22 @@ export default function PublicHomePage() {
       </div>
 
       {/* ── Navigation ─────────────────────────────────────── */}
-      <nav className="public-nav shadow-nav">
+      <nav className="public-nav shadow-nav sticky top-0 bg-white/80 backdrop-blur-md z-50">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-navy flex items-center justify-center text-white font-bold text-sm">
               UL
             </div>
             <div>
-              <div className="font-bold text-navy text-sm leading-tight">ULAW VB2-TX</div>
+              <div className="font-bold text-navy text-sm leading-tight">{siteName}</div>
               <div className="text-[10px] text-slate-500 leading-tight">LMS · Khóa 1 · 2026</div>
             </div>
           </div>
 
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
             <Link href="#features" className="hover:text-navy transition-colors">Tính năng</Link>
+            <Link href="#announcements" className="hover:text-navy transition-colors">Thông báo</Link>
             <Link href="#courses" className="hover:text-navy transition-colors">Môn học</Link>
-            <Link href="#faq" className="hover:text-navy transition-colors">FAQ</Link>
             <a href="https://www.hcmulaw.edu.vn" target="_blank" rel="noopener"
                className="hover:text-navy transition-colors">ULAW chính thức</a>
           </div>
@@ -127,20 +155,26 @@ export default function PublicHomePage() {
 
         <div className="relative max-w-7xl mx-auto px-4 py-24 lg:py-32">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 bg-white/10 text-white/80 text-xs px-3 py-1.5 rounded-full mb-6 border border-white/10">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Hệ thống đang hoạt động · Học kỳ I – 2026
-            </div>
+            {!config?.maintenanceMode && (
+              <div className="inline-flex items-center gap-2 bg-white/10 text-white/80 text-xs px-3 py-1.5 rounded-full mb-6 border border-white/10">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Hệ thống đang hoạt động · Học kỳ I – 2026
+              </div>
+            )}
+            {config?.maintenanceMode && (
+              <div className="inline-flex items-center gap-2 bg-amber-500/20 text-amber-200 text-xs px-3 py-1.5 rounded-full mb-6 border border-amber-500/30">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                Hệ thống đang bảo trì · Dự kiến quay lại sau 2h
+              </div>
+            )}
 
             <h1 className="text-4xl lg:text-6xl font-extrabold text-white mb-6 leading-tight" style={{fontFamily: '"Source Serif Pro", serif'}}>
-              Văn bằng 2 Luật từ xa.<br/>
-              <span className="text-ulaw-light">Học thuật chuẩn mực.</span>
+              {heroTitle}<br/>
+              <span className="text-ulaw-light">{heroSubtitle}</span>
             </h1>
 
             <p className="text-white/70 text-lg mb-8 leading-relaxed max-w-xl">
-              Hệ thống quản lý học tập chuyên nghiệp cho lớp Văn bằng 2 Luật từ xa đầu tiên của
-              Trường ĐH Luật TP.HCM — tích hợp LMS, thư viện pháp luật, video bài giảng,
-              lịch học và AI hỗ trợ học tập.
+              {config?.siteDescription || "Hệ thống quản lý học tập chuyên nghiệp cho lớp Văn bằng 2 Luật từ xa đầu tiên của Trường ĐH Luật TP.HCM — tích hợp LMS, thư viện pháp luật và AI hỗ trợ học tập."}
             </p>
 
             <div className="flex flex-wrap gap-3">
@@ -159,7 +193,7 @@ export default function PublicHomePage() {
         {/* Stats band */}
         <div className="border-t border-white/10">
           <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-            {STATS.map(s => (
+            {stats.map(s => (
               <div key={s.label} className="text-center">
                 <div className="text-2xl font-extrabold text-white">{s.value}</div>
                 <div className="text-white/50 text-xs mt-0.5">{s.label}</div>
@@ -173,7 +207,7 @@ export default function PublicHomePage() {
       <section className="bg-slate-50 border-b border-slate-200 py-6">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-wrap gap-2 justify-center">
-            {QUICK_LINKS.map(l => (
+            {quickLinks.map(l => (
               <Link key={l.label} href={l.href}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200
                            text-sm font-medium text-slate-700 hover:border-navy hover:text-navy
@@ -186,61 +220,104 @@ export default function PublicHomePage() {
         </div>
       </section>
 
-      {/* ── Features ───────────────────────────────────────── */}
-      <section id="features" className="py-20 px-4 max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 text-ulaw text-xs font-semibold uppercase tracking-widest mb-3">
-            <div className="w-6 h-0.5 bg-ulaw" /> Grade A LMS <div className="w-6 h-0.5 bg-ulaw" />
-          </div>
-          <h2 className="text-3xl font-extrabold text-navy-dark" style={{fontFamily: '"Source Serif Pro", serif'}}>
-            Nền tảng học tập toàn diện
-          </h2>
-          <p className="text-slate-500 mt-3 max-w-xl mx-auto text-sm leading-relaxed">
-            Được xây dựng theo tiêu chuẩn Canvas LMS, dành riêng cho sinh viên luật học từ xa,
-            kết hợp với bản sắc học thuật của Trường ĐH Luật TP.HCM.
-          </p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {FEATURES.map(f => (
-            <div key={f.title} className="card p-6 hover:shadow-card-hover transition-shadow">
-              <div className="w-12 h-12 rounded-2xl bg-navy/8 flex items-center justify-center text-2xl mb-4">
-                {f.icon}
-              </div>
-              <h3 className="font-bold text-navy-dark mb-2">{f.title}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
+      {/* ── Announcements ──────────────────────────────────── */}
+      <section id="announcements" className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-end justify-between mb-10">
+            <div>
+              <div className="text-ulaw text-xs font-semibold uppercase tracking-widest mb-3">Tin mới nhất</div>
+              <h2 className="text-3xl font-extrabold text-navy-dark" style={{fontFamily: '"Source Serif Pro", serif'}}>
+                Thông báo từ nhà trường
+              </h2>
             </div>
-          ))}
+            <Link href="/portal/announcements" className="text-navy font-bold text-sm hover:underline">
+              Xem tất cả →
+            </Link>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {announcements.map(ann => (
+              <Link key={ann.id} href={`/portal/announcements/${ann.id}`} className="card p-6 hover:shadow-card-hover transition-all border-l-4 border-l-navy group">
+                <div className="text-[10px] font-bold text-slate-400 uppercase mb-2">
+                  {new Date(ann.createdAt).toLocaleDateString("vi-VN")}
+                </div>
+                <h3 className="font-bold text-navy-dark group-hover:text-navy transition-colors mb-2 line-clamp-2">
+                  {ann.title}
+                </h3>
+                <span className="tag-default text-[10px]">{ann.tag}</span>
+              </Link>
+            ))}
+            {announcements.length === 0 && (
+              <div className="col-span-3 text-center py-10 bg-slate-50 rounded-2xl text-slate-400 italic">
+                Chưa có thông báo mới.
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Features ───────────────────────────────────────── */}
+      <section id="features" className="py-20 px-4 bg-slate-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 text-ulaw text-xs font-semibold uppercase tracking-widest mb-3">
+              <div className="w-6 h-0.5 bg-ulaw" /> Grade A LMS <div className="w-6 h-0.5 bg-ulaw" />
+            </div>
+            <h2 className="text-3xl font-extrabold text-navy-dark" style={{fontFamily: '"Source Serif Pro", serif'}}>
+              Nền tảng học tập toàn diện
+            </h2>
+            <p className="text-slate-500 mt-3 max-w-xl mx-auto text-sm leading-relaxed">
+              Được xây dựng theo tiêu chuẩn Canvas LMS, dành riêng cho sinh viên luật học từ xa,
+              kết hợp với bản sắc học thuật của Trường ĐH Luật TP.HCM.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map(f => (
+              <div key={f.title} className="card bg-white p-6 hover:shadow-card-hover transition-shadow">
+                <div className="w-12 h-12 rounded-2xl bg-navy/8 flex items-center justify-center text-2xl mb-4">
+                  {f.icon}
+                </div>
+                <h3 className="font-bold text-navy-dark mb-2">{f.title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ── Courses ────────────────────────────────────────── */}
-      <section id="courses" className="py-20 bg-slate-50 px-4">
+      <section id="courses" className="py-20 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 text-ulaw text-xs font-semibold uppercase tracking-widest mb-3">
               <div className="w-6 h-0.5 bg-ulaw" /> Chương trình học <div className="w-6 h-0.5 bg-ulaw" />
             </div>
             <h2 className="text-3xl font-extrabold text-navy-dark" style={{fontFamily: '"Source Serif Pro", serif'}}>
-              6 Môn học Học kỳ I
+              Môn học đang diễn ra
             </h2>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {COURSES.map(c => (
-              <div key={c.code} className="card p-5 flex items-start gap-4">
+            {courses.map(c => (
+              <div key={c.id} className="card p-5 flex items-start gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-navy/8 flex items-center justify-center text-2xl shrink-0">
-                  {c.icon}
+                  {c.icon || "⚖️"}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">
                     {c.code} · {c.credits} tín chỉ
                   </div>
                   <div className="font-bold text-navy-dark text-sm mt-0.5 leading-tight">{c.name}</div>
-                  <span className="badge-green text-[10px] mt-2">{c.status}</span>
+                  <span className="badge-green text-[10px] mt-2">Đang học</span>
                 </div>
               </div>
             ))}
+            {courses.length === 0 && (
+              <div className="col-span-3 text-center py-10 text-slate-400 italic">
+                Chưa có dữ liệu môn học.
+              </div>
+            )}
           </div>
 
           <div className="text-center mt-8">
@@ -276,7 +353,7 @@ export default function PublicHomePage() {
       <footer className="bg-navy-dark text-white/60 text-xs py-8 px-4">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div>
-            <div className="font-bold text-white text-sm mb-1">ULAW VB2-TX Learning Management System</div>
+            <div className="font-bold text-white text-sm mb-1">{siteName} Learning Management System</div>
             <div>Trường Đại học Luật TP. Hồ Chí Minh · Lớp Văn bằng 2 từ xa Khóa 1 · 2026</div>
           </div>
           <div className="flex gap-4">

@@ -83,12 +83,28 @@ export const TAG_LABELS: Record<string, string> = {
 };
 
 export const EVENT_TYPE_LABELS: Record<string, string> = {
-  EXAM: "Thi",
-  DEADLINE: "Nộp bài",
-  CLASS: "Học",
-  MAKEUP: "Học bù",
-  OTHER: "Khác",
+  CLASS: "📅 Học",
+  EXAM: "📝 Thi",
+  DEADLINE: "⏰ Deadline",
+  EVENT: "🎭 Sự kiện",
+  MEETING: "👥 Họp",
+  VIDEO_RELEASE: "🎬 Video",
 };
+
+export function getEventTypeLabel(type: string): string {
+  return EVENT_TYPE_LABELS[type] || type;
+}
+
+export function getEventTypeColor(type: string): string {
+  switch (type) {
+    case "EXAM": return "text-ulaw bg-ulaw/10";
+    case "DEADLINE": return "text-orange-600 bg-orange-50";
+    case "CLASS": return "text-navy bg-navy/5";
+    default: return "text-slate-600 bg-slate-50";
+  }
+}
+
+
 
 /** Role labels in Vietnamese */
 export const ROLE_LABELS: Record<string, string> = {

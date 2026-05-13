@@ -2,7 +2,7 @@ version: "3.9"
 
 # ======================================================
 # ULAW LMS v2 — Production Docker Compose
-# Domain: portal.srv1559779.hstgr.cloud
+# Domain: ulawvb2tx.com
 # ======================================================
 
 networks:
@@ -74,7 +74,7 @@ services:
     environment:
       DATABASE_URL: postgresql://ulaw_user:${POSTGRES_PASSWORD}@db:5432/ulaw_lms
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-      NEXTAUTH_URL: https://portal.srv1559779.hstgr.cloud
+      NEXTAUTH_URL: https://ulawvb2tx.com
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       NODE_ENV: production
@@ -83,10 +83,19 @@ services:
       - ulaw_internal
     labels:
       - traefik.enable=true
-      - traefik.http.routers.ulaw-lms.rule=Host(`portal.srv1559779.hstgr.cloud`)
+      # Accept both apex and www variants — Traefik routes either to the
+      # same service. www → apex is enforced by the redirect middleware.
+      - traefik.http.routers.ulaw-lms.rule=Host(`ulawvb2tx.com`) || Host(`www.ulawvb2tx.com`)
       - traefik.http.routers.ulaw-lms.entrypoints=websecure
       - traefik.http.routers.ulaw-lms.tls.certresolver=letsencrypt
+      - traefik.http.routers.ulaw-lms.tls.domains[0].main=ulawvb2tx.com
+      - traefik.http.routers.ulaw-lms.tls.domains[0].sans=www.ulawvb2tx.com
       - traefik.http.services.ulaw-lms.loadbalancer.server.port=3000
+      # Redirect www → apex to keep cookies on a single host.
+      - traefik.http.middlewares.www-to-apex.redirectregex.regex=^https://www\.ulawvb2tx\.com/(.*)
+      - traefik.http.middlewares.www-to-apex.redirectregex.replacement=https://ulawvb2tx.com/$${1}
+      - traefik.http.middlewares.www-to-apex.redirectregex.permanent=true
+      - traefik.http.routers.ulaw-lms.middlewares=www-to-apex@docker
 
 volumes:
   pgdata:

@@ -10,26 +10,25 @@ export async function GET(req: NextRequest) {
 
   const sp = req.nextUrl.searchParams;
   const { skip, pageSize, page } = parsePagination(sp, 30);
-  const q = sp.get("q") ?? undefined;
-  const action = sp.get("action") ?? undefined;
+  const q = sp.get("q") || undefined;
+  const action = sp.get("action") || undefined;
 
-  const where = {
-    ...(action ? { action: action as never } : {}),
-    ...(q ? {
-      OR: [
-        { actor: { email: { contains: q, mode: "insensitive" as const } } },
-        { actor: { name: { contains: q, mode: "insensitive" as const } } },
-        { action: { contains: q, mode: "insensitive" as const } },
-      ]
-    } : {}),
-  };
+  const where: any = {};
+  if (action) where.action = action;
+  if (q) {
+    where.OR = [
+      { actor: { email: { contains: q, mode: "insensitive" } } },
+      { actor: { name: { contains: q, mode: "insensitive" } } },
+      { entityId: { contains: q, mode: "insensitive" } },
+      { entity: { contains: q, mode: "insensitive" } },
+    ];
+  }
 
   const [items, total] = await Promise.all([
     prisma.auditLog.findMany({
       where,
       include: {
         actor: { select: { name: true, email: true } },
-        target: { select: { name: true, email: true } },
       },
       orderBy: { createdAt: "desc" },
       skip,

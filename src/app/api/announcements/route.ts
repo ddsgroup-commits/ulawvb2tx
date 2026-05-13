@@ -1,68 +1,98 @@
-import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { ok, err, parsePagination } from "@/lib/utils";
+import { apiHandler, ok, paginated } from "@/lib/api";
+import { announcementCreateSchema, paginationSchema } from "@/lib/validation";
+import { PERMISSIONS } from "@/lib/permissions";
+import { notifyMany } from "@/lib/notifications";
+import { z } from "zod";
 
-export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return err("Unauthorized", 401);
+const listQuery = paginationSchema.extend({
+  tag: z.string().optional(),
+  pinned: z.coerce.boolean().optional(),
+  courseId: z.string().optional(),
+});
 
-  const sp = req.nextUrl.searchParams;
-  const { skip, pageSize, page } = parsePagination(sp, 20);
-  const tag = sp.get("tag") ?? undefined;
-  const q = sp.get("q") ?? undefined;
-  const pinned = sp.get("pinned");
+/** GET /api/announcements — published list, filterable. Auth required. */
+export const GET = apiHandler({
+  auth: "required",
+  query: listQuery,
+  handler: async ({ query }) => {
+    const where: any = { published: true };
+    if (query.tag) where.tag = query.tag;
+    if (query.pinned !== undefined) where.pinned = query.pinned;
+    if (query.courseId) where.courseId = query.courseId;
+    if (query.q) {
+      where.OR = [
+        { title: { contains: query.q, mode: "insensitive" } },
+        { content: { contains: query.q, mode: "insensitive" } },
+      ];
+    }
+    const [items, total] = await Promise.all([
+      prisma.announcement.findMany({
+        where,
+        orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+        include: {
+          author: { select: { name: true, image: true, role: true } },
+          course: { select: { code: true, name: true } },
+        },
+      }),
+      prisma.announcement.count({ where }),
+    ]);
+    return paginated(items, { page: query.page, pageSize: query.pageSize, total });
+  },
+});
 
-  const where = {
-    published: true,
-    publishAt: { lte: new Date() },
-    ...(tag ? { tags: { has: tag } } : {}),
-    ...(pinned === "true" ? { pinned: true } : {}),
-    ...(q ? {
-      OR: [
-        { title: { contains: q, mode: "insensitive" as const } },
-        { body: { contains: q, mode: "insensitive" as const } },
-      ]
-    } : {}),
-  };
+/** POST — admin/lecturer create, then fan-out notifications. */
+export const POST = apiHandler({
+  auth: "required",
+  permission: PERMISSIONS.ANNOUNCEMENTS_MANAGE,
+  body: announcementCreateSchema,
+  handler: async ({ session, body }) => {
+    const authorId = session!.user!.id as string;
 
-  const [items, total] = await Promise.all([
-    prisma.announcement.findMany({
-      where,
-      orderBy: [{ pinned: "desc" }, { publishAt: "desc" }],
-      skip,
-      take: pageSize,
-    }),
-    prisma.announcement.count({ where }),
-  ]);
+    const announcement = await prisma.announcement.create({
+      data: {
+        title: body.title,
+        content: body.content,
+        tag: body.tag,
+        courseId: body.courseId || null,
+        pinned: body.pinned,
+        urgent: body.urgent,
+        publishAt: body.publishAt ?? null,
+        expiresAt: body.expiresAt ?? null,
+        authorId,
+        status: "PUBLISHED",
+      },
+    });
 
-  return ok({ items, total, page, pageSize });
-}
+    await prisma.auditLog.create({
+      data: {
+        actorId: authorId,
+        action: "CONTENT_PUBLISHED",
+        entity: "Announcement",
+        entityId: announcement.id,
+        detail: { title: announcement.title, urgent: announcement.urgent, tag: announcement.tag },
+      },
+    });
 
-export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return err("Unauthorized", 401);
+    const recipients = await prisma.user.findMany({
+      where: { isActive: true, role: { not: "PENDING_USER" }, id: { not: authorId } },
+      select: { id: true },
+    });
 
-  const role = session.user.role;
-  if (!["SUPER_ADMIN", "ADMIN"].includes(role)) return err("Forbidden", 403);
+    if (recipients.length > 0) {
+      await notifyMany({
+        userIds: recipients.map((r) => r.id),
+        type: "ANNOUNCEMENT",
+        title: announcement.urgent ? `🚨 ${announcement.title}` : announcement.title,
+        body: announcement.content.slice(0, 200),
+        link: `/portal/announcements/${announcement.id}`,
+        entity: "Announcement",
+        entityId: announcement.id,
+      });
+    }
 
-  const body = await req.json();
-  const { title, body: content, tags, pinned, publishAt, courseId } = body;
-
-  if (!title?.trim()) return err("Tiêu đề không được trống");
-
-  const item = await prisma.announcement.create({
-    data: {
-      title: title.trim(),
-      body: content ?? "",
-      tags: tags ?? [],
-      pinned: pinned ?? false,
-      published: true,
-      publishAt: publishAt ? new Date(publishAt) : new Date(),
-      courseId: courseId ?? null,
-      authorId: session.user.id,
-    },
-  });
-
-  return ok(item, 201);
-}
+    return ok(announcement, 201);
+  },
+});

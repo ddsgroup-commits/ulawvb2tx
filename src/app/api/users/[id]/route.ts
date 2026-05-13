@@ -4,11 +4,12 @@ import prisma from "@/lib/prisma";
 import { ok, err } from "@/lib/utils";
 import { logAudit, getClientIp } from "@/lib/audit";
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user) return err("Unauthorized", 401);
   if (!["SUPER_ADMIN", "ADMIN"].includes(session.user.role)) return err("Forbidden", 403);
 
+  const { id } = await params;
   const body = await req.json();
   const { role, isActive, action } = body;
   const ip = getClientIp(req);
@@ -16,28 +17,28 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   // Handle approval action
   if (action === "approve") {
     const user = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: { role: role ?? "STUDENT", isActive: true },
     });
-    await logAudit({ action: "USER_APPROVED", actorId: session.user.id, targetId: params.id, ipAddress: ip });
+    await logAudit({ action: "USER_APPROVED", actorId: session.user.id, targetId: id, ipAddress: ip });
     return ok(user);
   }
 
   if (action === "reject") {
     const user = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: { isActive: false },
     });
-    await logAudit({ action: "USER_REJECTED", actorId: session.user.id, targetId: params.id, ipAddress: ip });
+    await logAudit({ action: "USER_REJECTED", actorId: session.user.id, targetId: id, ipAddress: ip });
     return ok(user);
   }
 
   if (action === "deactivate") {
     const user = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: { isActive: false },
     });
-    await logAudit({ action: "USER_DEACTIVATED", actorId: session.user.id, targetId: params.id, ipAddress: ip });
+    await logAudit({ action: "USER_DEACTIVATED", actorId: session.user.id, targetId: id, ipAddress: ip });
     return ok(user);
   }
 
@@ -46,13 +47,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (role !== undefined) updated.role = role;
   if (isActive !== undefined) updated.isActive = isActive;
 
-  const user = await prisma.user.update({ where: { id: params.id }, data: updated });
+  const user = await prisma.user.update({ where: { id }, data: updated });
 
   if (role !== undefined) {
     await logAudit({
       action: "USER_ROLE_CHANGED",
       actorId: session.user.id,
-      targetId: params.id,
+      targetId: id,
       detail: { newRole: role },
       ipAddress: ip,
     });

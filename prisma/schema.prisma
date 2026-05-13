@@ -90,6 +90,7 @@ enum AuditAction {
   USER_REJECTED
   USER_ROLE_CHANGED
   USER_DEACTIVATED
+  USER_PASSWORD_RESET
   CONTENT_SUBMITTED
   CONTENT_APPROVED
   CONTENT_REJECTED
@@ -104,6 +105,47 @@ enum AuditAction {
   GOOGLE_LINKED
   GOOGLE_UNLINKED
   SYSTEM_SETTING_CHANGED
+  ASSIGNMENT_SUBMITTED
+  ASSIGNMENT_GRADED
+  QUIZ_SUBMITTED
+  ATTENDANCE_RECORDED
+  NOTIFICATION_SENT
+}
+
+enum NotificationType {
+  ANNOUNCEMENT
+  ASSIGNMENT_DUE
+  ASSIGNMENT_GRADED
+  QUIZ_AVAILABLE
+  QUIZ_GRADED
+  CLASS_REMINDER
+  EXAM_REMINDER
+  FORUM_REPLY
+  FORUM_MENTION
+  CONTENT_APPROVED
+  CONTENT_REJECTED
+  ATTENDANCE_OPENED
+  SYSTEM
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  PUSH
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum QuestionType {
+  MCQ_SINGLE
+  MCQ_MULTI
+  TRUE_FALSE
+  ESSAY
 }
 
 // ── Core User & Auth ─────────────────────────────────────────
@@ -147,6 +189,17 @@ model User {
   approvedBy   Invitation[] @relation("InvitedBy")
   auditLogs    AuditLog[]   @relation("AuditActor")
   auditTargets AuditLog[]   @relation("AuditTarget")
+
+  // ── New: notifications, quizzes, attendance, AI, progress ──
+  notifications        Notification[]
+  notificationPref     NotificationPreference?
+  pushSubscriptions    PushSubscription[]
+  quizAttempts         QuizAttempt[]
+  attendanceRecords    AttendanceRecord[]
+  lessonProgress       LessonProgress[]
+  aiSessions           AiSession[]
+  preferredLanguage    String?  @default("vi")
+  lastLoginAt          DateTime?
 
   @@map("users")
 }
@@ -312,6 +365,8 @@ model Course {
   videos        Video[]
   assignments   Assignment[]
   discussions   Discussion[]
+  quizzes            Quiz[]
+  attendanceSessions AttendanceSession[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -336,6 +391,7 @@ model Module {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([courseId, order])
   @@map("modules")
 }
 
@@ -643,8 +699,21 @@ model AuditLog {
 // ── System Config ─────────────────────────────────────────────
 
 model SiteConfig {
-  key       String   @id
-  value     String   @db.Text
+  id               String  @id @default("default")
+  siteName         String  @default("ULAW VB2-TX LMS")
+  siteDescription  String? @db.Text
+  contactEmail     String?
+  zaloGroupUrl     String?
+  facebookGroupUrl String?
+  maintenanceMode  Boolean @default(false)
+
+  // Homepage sections
+  heroTitle    String? @db.Text
+  heroSubtitle String? @db.Text
+  stats        Json? // Array of {value, label}
+  features     Json? // Array of {icon, title, desc}
+  quickLinks   Json? // Array of {icon, label, href}
+
   updatedAt DateTime @updatedAt
 
   @@map("site_config")
@@ -662,3 +731,194 @@ model ExternalLink {
 
   @@map("external_links")
 }
+
+// ── Notifications ────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String?          @db.Text
+  link      String?
+  entity    String?
+  entityId  String?
+  read      Boolean          @default(false)
+  readAt    DateTime?
+  // Track which channels successfully delivered (in-app is always true once
+  // a row exists; email/push reflect actual delivery attempts).
+  channels  NotificationChannel[]
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id      String @id @default(cuid())
+  userId  String @unique
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  emailEnabled    Boolean @default(true)
+  pushEnabled     Boolean @default(true)
+  digestFrequency String  @default("INSTANT") // INSTANT, DAILY, WEEKLY, OFF
+
+  // Per-channel toggles (JSON for flexibility)
+  channels Json @default("{\"announcements\":true,\"assignments\":true,\"grades\":true,\"forum\":true,\"calendar\":true}")
+
+  updatedAt DateTime @updatedAt
+
+  @@map("notification_preferences")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String   @db.Text
+  auth      String   @db.Text
+  userAgent String?
+  lastUsed  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+// ── Quizzes ──────────────────────────────────────────────────
+
+model Quiz {
+  id               String   @id @default(cuid())
+  courseId         String
+  course           Course   @relation(fields: [courseId], references: [id])
+  title            String
+  description      String?  @db.Text
+  timeLimitMin     Int? // minutes
+  passingScore     Int      @default(60)
+  maxAttempts      Int      @default(1)
+  shuffleQuestions Boolean  @default(false)
+  isPublished      Boolean  @default(false)
+  opensAt          DateTime?
+  closesAt         DateTime?
+
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id             String       @id @default(cuid())
+  quizId         String
+  quiz           Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  order          Int          @default(0)
+  type           QuestionType
+  prompt         String       @db.Text
+  options        Json? // array of strings for MCQ
+  correctAnswers Json // array of strings (option keys)
+  points         Float        @default(1)
+  explanation    String?      @db.Text
+
+  @@index([quizId])
+  @@map("quiz_questions")
+}
+
+model QuizAttempt {
+  id          String   @id @default(cuid())
+  quizId      String
+  quiz        Quiz     @relation(fields: [quizId], references: [id])
+  studentId   String
+  student     User     @relation(fields: [studentId], references: [id])
+  startedAt   DateTime @default(now())
+  submittedAt DateTime?
+  answers     Json // { questionId: [...selected] }
+  score       Float?
+  passed      Boolean?
+  durationSec Int?
+
+  @@index([quizId, studentId])
+  @@map("quiz_attempts")
+}
+
+// ── Attendance ───────────────────────────────────────────────
+
+model AttendanceSession {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id])
+  title       String
+  sessionDate DateTime
+  durationMin Int      @default(120)
+  formUrl     String?
+  notes       String?  @db.Text
+  isClosed    Boolean  @default(false)
+
+  records AttendanceRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId, sessionDate])
+  @@map("attendance_sessions")
+}
+
+model AttendanceRecord {
+  id        String           @id @default(cuid())
+  sessionId String
+  session   AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentId String
+  student   User             @relation(fields: [studentId], references: [id])
+  status    AttendanceStatus @default(ABSENT)
+  note      String?
+  recordedAt DateTime        @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([sessionId, studentId])
+  @@index([studentId])
+  @@map("attendance_records")
+}
+
+// ── Lesson Progress (Continue Watching, video % complete) ────
+
+model LessonProgress {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId     String
+  progressPct  Int      @default(0)
+  positionSec  Int      @default(0)
+  completed    Boolean  @default(false)
+  completedAt  DateTime?
+  lastSeenAt   DateTime @default(now())
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@map("lesson_progress")
+}
+
+// ── AI Sessions (saved chats for the AI Study Assistant) ─────
+
+model AiSession {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String   @default("Cuộc trò chuyện mới")
+  courseId    String?
+  promptType  String? // "explain", "exam", "summarize", "revision", "flashcards", "translate"
+  messages    Json // [{ role, content, createdAt }]
+  pinned      Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("ai_sessions")
+}
+

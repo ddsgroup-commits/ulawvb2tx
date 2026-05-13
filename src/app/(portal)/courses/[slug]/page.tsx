@@ -8,25 +8,46 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ExternalLink, BookOpen, GraduationCap, NotebookPen, Video, FileText, Calendar, MessageSquare } from "lucide-react";
 
+// Pre-generate slugs when a DB is reachable at build time; if not (e.g.
+// CI builds without the prod DATABASE_URL), fall through to dynamic
+// rendering. The runtime page itself still resolves the course via
+// `prisma.course.findUnique` inside the request handler, so this is
+// purely an optimisation, not a correctness boundary.
 export async function generateStaticParams() {
-  const courses = await prisma.course.findMany({ select: { slug: true } });
-  return courses.map(c => ({ slug: c.slug }));
+  try {
+    const courses = await prisma.course.findMany({ select: { slug: true } });
+    return courses.map((c) => ({ slug: c.slug }));
+  } catch {
+    return [];
+  }
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata(
+  props: {
+    params: Promise<{ slug: string }>;
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  }
+) {
+  const { slug } = await props.params;
   const course = await prisma.course.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     select: { name: true },
   });
   return { title: course ? `${course.name} — ULAW LMS` : "Môn học" };
 }
 
-export default async function CourseDetailPage({ params }: { params: { slug: string } }) {
+export default async function CourseDetailPage(
+  props: {
+    params: Promise<{ slug: string }>;
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  }
+) {
+  const { slug } = await props.params;
   const session = await auth();
   if (!session?.user) redirect("/login");
 
   const course = await prisma.course.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     include: {
       lecturer: { select: { name: true, email: true } },
       modules: {
@@ -88,7 +109,7 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
     { icon: <Video className="w-4 h-4" />, label: `Video (${course.videos.length})`, href: `#videos` },
     { icon: <FileText className="w-4 h-4" />, label: `Tài liệu (${course.libraryItems.length})`, href: `#library` },
     { icon: <Calendar className="w-4 h-4" />, label: `Lịch (${course.events.length})`, href: `#schedule` },
-    { icon: <MessageSquare className="w-4 h-4" />, label: "Thảo luận", href: `/portal/courses/${params.slug}/discussions` },
+    { icon: <MessageSquare className="w-4 h-4" />, label: "Thảo luận", href: `/portal/courses/${slug}/discussions` },
   ];
 
   return (
@@ -237,7 +258,7 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
             <div id="videos">
               <div className="section-head">
                 <span className="font-bold text-navy-dark">🎬 Video bài giảng</span>
-                <Link href={`/portal/videos?course=${params.slug}`} className="text-xs text-navy hover:underline">
+                <Link href={`/portal/videos?course=${slug}`} className="text-xs text-navy hover:underline">
                   Xem tất cả →
                 </Link>
               </div>

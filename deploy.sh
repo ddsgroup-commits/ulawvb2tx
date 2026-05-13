@@ -1,13 +1,17 @@
 #!/bin/bash
 # =============================================================
 # ULAW LMS v2 — VPS Deployment Script
-# Target: portal.srv1559779.hstgr.cloud
+# Target: ulawvb2tx.com
 # =============================================================
 
 set -e
 
 # ── Config ────────────────────────────────────────────────────
-VPS_HOST="root@portal.srv1559779.hstgr.cloud"
+# SSH target is the VPS IP, not the public domain, so we don't depend
+# on DNS being healthy when deploying. Override with $VPS_HOST if you
+# prefer the hostname.
+VPS_HOST="${VPS_HOST:-root@213.190.4.75}"
+PUBLIC_HOST="ulawvb2tx.com"
 REMOTE_DIR="/opt/ulaw-lms"
 ENV_FILE=".env.prod"
 
@@ -75,8 +79,8 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build --r
 echo "[REMOTE] Waiting for app to be healthy (30s)..."
 sleep 30
 
-echo "[REMOTE] Running migrations..."
-docker compose -f docker-compose.prod.yml --env-file .env.prod exec -T app npx prisma migrate deploy || true
+echo "[REMOTE] Syncing database schema..."
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec -T app npx prisma db push --accept-data-loss
 
 echo "[REMOTE] Seeding database (first-time only)..."
 docker compose -f docker-compose.prod.yml --env-file .env.prod exec -T app sh -c 'DATABASE_URL=$DATABASE_URL npx tsx prisma/seed.ts' 2>/dev/null || echo "[REMOTE] Seed skipped (may already be seeded)"
@@ -87,7 +91,15 @@ REMOTE
 
 success "Deployment complete!"
 echo ""
-echo -e "${GREEN}🎉 Site is live at: https://portal.srv1559779.hstgr.cloud${NC}"
+echo -e "${GREEN}🎉 Site is live at: https://${PUBLIC_HOST}${NC}"
+
+# Verify DNS + HTTPS reachability from this machine. Non-fatal so a
+# brand-new domain (waiting on Let's Encrypt) doesn't fail the deploy.
+echo ""
+echo -n "→ DNS check: "
+host "${PUBLIC_HOST}" 2>&1 | head -1 || true
+echo -n "→ HTTPS check: "
+curl -sS -o /dev/null -w "HTTP %{http_code} from %{remote_ip}\n" --max-time 15 "https://${PUBLIC_HOST}/" || warn "Could not reach https://${PUBLIC_HOST} yet — DNS or Let's Encrypt may still be propagating (give it 1-2 minutes)."
 echo ""
 echo "Default credentials:"
 echo "  superadmin@ulaw.edu.vn  /  Admin@2025!"

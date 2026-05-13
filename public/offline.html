@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline · ULAW VB2-TX</title>
+  <style>
+    body {
+      font-family: Inter, system-ui, sans-serif;
+      background: linear-gradient(135deg,#0d1e3a 0%,#1F3A68 100%);
+      color: white;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      max-width: 440px;
+      text-align: center;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 24px;
+      padding: 40px;
+      backdrop-filter: blur(12px);
+    }
+    .icon {
+      font-size: 56px;
+      margin-bottom: 16px;
+    }
+    h1 { font-size: 22px; margin: 0 0 8px; font-weight: 800; }
+    p { color: rgba(255,255,255,0.7); line-height: 1.6; margin: 0 0 24px; font-size: 14px; }
+    button {
+      background: #B32024;
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📡</div>
+    <h1>Hiện không có kết nối</h1>
+    <p>Bạn đang offline. Hãy kiểm tra Wi-Fi / 4G rồi thử lại. Các bài giảng đã tải về vẫn xem được trong trang đã ghé thăm gần đây.</p>
+    <button onclick="location.reload()">Thử lại</button>
+  </div>
+</body>
+</html>

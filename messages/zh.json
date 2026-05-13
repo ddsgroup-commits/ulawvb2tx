@@ -1,0 +1,72 @@
+{
+  "common": {
+    "appName": "ULAW VB2-TX LMS",
+    "appTagline": "胡志明市法律大学第二学位远程班学习管理系统",
+    "loading": "加载中…",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "create": "新建",
+    "submit": "提交",
+    "search": "搜索",
+    "back": "返回",
+    "next": "下一步",
+    "viewAll": "查看全部",
+    "noData": "暂无数据",
+    "comingSoon": "即将推出",
+    "today": "今天",
+    "yesterday": "昨天",
+    "tomorrow": "明天"
+  },
+  "nav": {
+    "home": "首页",
+    "about": "关于",
+    "courses": "课程",
+    "announcements": "公告",
+    "login": "登录",
+    "logout": "登出",
+    "dashboard": "仪表盘",
+    "myCourses": "我的课程",
+    "calendar": "日历",
+    "assignments": "作业",
+    "videos": "讲座视频",
+    "library": "资料库",
+    "attendance": "考勤",
+    "forum": "讨论",
+    "aiAssistant": "AI 助手",
+    "profile": "个人资料",
+    "settings": "设置",
+    "admin": "管理后台"
+  },
+  "auth": {
+    "loginTitle": "登录学习门户",
+    "email": "电子邮箱",
+    "password": "密码",
+    "remember": "记住我",
+    "forgot": "忘记密码？",
+    "loginWithGoogle": "使用 Google 登录",
+    "or": "或",
+    "loginError": "邮箱或密码错误"
+  },
+  "landing": {
+    "heroTitle": "第二学位法学远程课程。",
+    "heroSubtitle": "学术卓越。",
+    "ctaLogin": "进入学习门户",
+    "unofficialNotice": "本平台为班级学习支持门户，未获授权时不代表大学官方系统。"
+  },
+  "dashboard": {
+    "welcome": "欢迎回来",
+    "todaySchedule": "今日课程表",
+    "upcomingClasses": "即将到来的课程",
+    "pendingAssignments": "待完成作业",
+    "newAnnouncements": "新公告",
+    "courseProgress": "学习进度",
+    "examCountdown": "考试倒计时",
+    "quickAccess": "快速访问"
+  },
+  "ai": {
+    "title": "AI 学习助手",
+    "disclaimer": "AI 仅作为学习辅助，不构成正式法律意见。"
+  }
+}

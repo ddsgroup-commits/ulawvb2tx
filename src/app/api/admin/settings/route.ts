@@ -9,7 +9,7 @@ export async function GET() {
   if (!session?.user) return err("Unauthorized", 401);
   if (!["SUPER_ADMIN", "ADMIN"].includes(session.user.role)) return err("Forbidden", 403);
 
-  const config = await prisma.siteConfig.findFirst();
+  const config = await prisma.siteConfig.findFirst({ where: { id: "default" } });
   return ok(config);
 }
 
@@ -19,29 +19,46 @@ export async function PATCH(req: NextRequest) {
   if (!["SUPER_ADMIN", "ADMIN"].includes(session.user.role)) return err("Forbidden", 403);
 
   const body = await req.json();
-  const { siteName, siteDescription, contactEmail, zaloGroupUrl, facebookGroupUrl, maintenanceMode } = body;
+  const { 
+    siteName, siteDescription, contactEmail, zaloGroupUrl, facebookGroupUrl, 
+    maintenanceMode, heroTitle, heroSubtitle, stats, features, quickLinks 
+  } = body;
 
-  const existing = await prisma.siteConfig.findFirst();
-  const data = {
-    ...(siteName !== undefined ? { siteName } : {}),
-    ...(siteDescription !== undefined ? { siteDescription } : {}),
-    ...(contactEmail !== undefined ? { contactEmail } : {}),
-    ...(zaloGroupUrl !== undefined ? { zaloGroupUrl } : {}),
-    ...(facebookGroupUrl !== undefined ? { facebookGroupUrl } : {}),
-    ...(maintenanceMode !== undefined ? { maintenanceMode } : {}),
-  };
-
-  let config;
-  if (existing) {
-    config = await prisma.siteConfig.update({ where: { id: existing.id }, data });
-  } else {
-    config = await prisma.siteConfig.create({ data: { siteName: siteName ?? "ULAW VB2-TX LMS", ...data } });
-  }
+  const config = await prisma.siteConfig.upsert({
+    where: { id: "default" },
+    update: {
+      siteName,
+      siteDescription,
+      contactEmail,
+      zaloGroupUrl,
+      facebookGroupUrl,
+      maintenanceMode,
+      heroTitle,
+      heroSubtitle,
+      stats,
+      features,
+      quickLinks,
+    },
+    create: {
+      id: "default",
+      siteName,
+      siteDescription,
+      contactEmail,
+      zaloGroupUrl,
+      facebookGroupUrl,
+      maintenanceMode,
+      heroTitle,
+      heroSubtitle,
+      stats,
+      features,
+      quickLinks,
+    },
+  });
 
   await logAudit({
     action: "SYSTEM_SETTING_CHANGED",
     actorId: session.user.id,
-    detail: data,
+    detail: body,
     ipAddress: getClientIp(req),
   });
 

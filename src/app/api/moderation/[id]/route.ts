@@ -4,11 +4,12 @@ import prisma from "@/lib/prisma";
 import { ok, err } from "@/lib/utils";
 import { logAudit, getClientIp } from "@/lib/audit";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user) return err("Unauthorized", 401);
   if (!["SUPER_ADMIN", "ADMIN", "MODERATOR"].includes(session.user.role)) return err("Forbidden", 403);
 
+  const { id } = await params;
   const { action, note, entity } = await req.json();
   const ip = getClientIp(req);
 
@@ -31,10 +32,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   let found = false;
   let entityName = "unknown";
 
-  const annc = await prisma.announcement.findUnique({ where: { id: params.id } });
+  const annc = await prisma.announcement.findUnique({ where: { id } });
   if (annc) {
     await prisma.announcement.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status: newStatus as never,
         note: noteVal,
@@ -47,10 +48,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   if (!found) {
-    const video = await prisma.video.findUnique({ where: { id: params.id } });
+    const video = await prisma.video.findUnique({ where: { id } });
     if (video) {
       await prisma.video.update({
-        where: { id: params.id },
+        where: { id },
         data: { status: newStatus as never, note: noteVal },
       });
       found = true;
@@ -59,10 +60,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   if (!found) {
-    const lib = await prisma.libraryItem.findUnique({ where: { id: params.id } });
+    const lib = await prisma.libraryItem.findUnique({ where: { id } });
     if (lib) {
       await prisma.libraryItem.update({
-        where: { id: params.id },
+        where: { id },
         data: { status: newStatus as never, note: noteVal },
       });
       found = true;
@@ -75,11 +76,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   await logAudit({
     action: auditAction,
     actorId: session.user.id,
-    entityId: params.id,
+    entityId: id,
     entity: entityName,
     detail: { newStatus, note: noteVal },
     ipAddress: ip,
   });
 
-  return ok({ id: params.id, status: newStatus });
+  return ok({ id, status: newStatus });
 }

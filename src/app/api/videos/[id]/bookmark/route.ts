@@ -3,12 +3,14 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { ok, err } from "@/lib/utils";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user) return err("Unauthorized", 401);
 
+  const { id } = await params;
+
   const existing = await prisma.videoBookmark.findUnique({
-    where: { userId_videoId: { userId: session.user.id, videoId: params.id } },
+    where: { userId_videoId: { userId: session.user.id, videoId: id } },
   });
 
   if (existing) {
@@ -17,7 +19,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   await prisma.videoBookmark.create({
-    data: { userId: session.user.id, videoId: params.id },
+    data: { userId: session.user.id, videoId: id },
   });
   return ok({ bookmarked: true });
 }

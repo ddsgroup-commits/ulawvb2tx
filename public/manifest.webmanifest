@@ -1,0 +1,25 @@
+{
+  "name": "ULAW VB2-TX LMS",
+  "short_name": "ULAW VB2-TX",
+  "description": "Hệ thống học tập cho lớp Văn bằng 2 Luật từ xa – Trường Đại học Luật TP.HCM",
+  "start_url": "/portal/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d1e3a",
+  "theme_color": "#1F3A68",
+  "lang": "vi",
+  "categories": ["education"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Bảng điều khiển", "url": "/portal/dashboard", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Lịch học", "url": "/portal/calendar", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Bài tập", "url": "/portal/assignments", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Trợ lý AI", "url": "/portal/ai-assistant", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

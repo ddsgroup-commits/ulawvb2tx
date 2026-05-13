@@ -6,7 +6,7 @@ import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, BookOpen, Megaphone, Calendar, Video,
   Library, Users, Settings, LogOut, Shield, Edit3, User,
-  BarChart2, ClipboardList, MessageSquare, HelpCircle
+  BarChart2, ClipboardList, MessageSquare, HelpCircle, Sparkles
 } from "lucide-react";
 
 type Role = "SUPER_ADMIN"|"ADMIN"|"MODERATOR"|"CREATOR"|"LECTURER"|"STUDENT"|"PENDING_USER";
@@ -34,6 +34,7 @@ function getNavSections(role: Role): NavSection[] {
       { icon: <Calendar className="w-4 h-4" />, label: "Lịch học", href: "/portal/calendar" },
       { icon: <Video className="w-4 h-4" />, label: "Video bài giảng", href: "/portal/videos" },
       { icon: <Library className="w-4 h-4" />, label: "Thư viện tài liệu", href: "/portal/library" },
+      { icon: <Sparkles className="w-4 h-4" />, label: "Trợ lý AI", href: "/portal/ai-assistant" },
       { icon: <Users className="w-4 h-4" />, label: "Danh bạ lớp", href: "/portal/classmates" },
       { icon: <MessageSquare className="w-4 h-4" />, label: "Thảo luận", href: "/portal/discussions" },
       { icon: <HelpCircle className="w-4 h-4" />, label: "FAQ", href: "/portal/faq" },

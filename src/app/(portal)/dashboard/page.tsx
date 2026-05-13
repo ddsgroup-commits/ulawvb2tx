@@ -6,7 +6,9 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { Role } from "@prisma/client";
 import { formatDateVi, getEventTypeLabel, getEventTypeColor } from "@/lib/utils";
+import MembershipCenter from "@/components/MembershipCenter";
 
 export const metadata = { title: "Dashboard — ULAW VB2-TX LMS" };
 
@@ -19,12 +21,12 @@ export default async function DashboardPage() {
   const firstName = userName.split(" ").pop() ?? userName;
   const userRole = (session.user as { role?: string }).role ?? "STUDENT";
   const userEmail = session.user.email ?? "";
-  const userMSSV = userEmail.split("@")[0];
+  const userMSSV = (session.user as any).mssv ?? userEmail.split("@")[0];
 
   // Parallel data fetching
   const [announcements, upcomingEvents, courses, recentVideos, config, stats] = await Promise.all([
     prisma.announcement.findMany({
-      where: { published: true, OR: [{ publishAt: null }, { publishAt: { lte: new Date() } }] },
+      where: { status: "PUBLISHED", OR: [{ publishAt: null }, { publishAt: { lte: new Date() } }] },
       include: { author: { select: { name: true } } },
       orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
       take: 4,
@@ -47,23 +49,23 @@ export default async function DashboardPage() {
       orderBy: { createdAt: "desc" },
       take: 3,
     }),
-    prisma.siteConfig.findMany(),
+    prisma.siteConfig.findUnique({ where: { id: "default" } }),
     Promise.resolve({
       activeCourses: await prisma.course.count({ where: { status: "ACTIVE" } }),
-      totalAnnouncements: await prisma.announcement.count({ where: { published: true } }),
+      totalAnnouncements: await prisma.announcement.count({ where: { status: "PUBLISHED" } }),
       upcomingExams: await prisma.event.count({ where: { type: "EXAM", date: { gte: new Date() } } }),
       upcomingDeadlines: await prisma.event.count({ where: { type: "DEADLINE", date: { gte: new Date() } } }),
     }),
   ]);
 
-  const configMap = Object.fromEntries(config.map(c => [c.key, c.value]));
-  const semester = configMap["semester"] ?? "Học kỳ I – 2026";
-  const googleCalUrl = configMap["googleCalendar"];
-  const attendanceUrl = configMap["formUpdate"];
+  const semester = "Học kỳ I – 2026"; // Fallback or from another model if needed
+  const zaloUrl = config?.zaloGroupUrl;
+  const contactEmail = config?.contactEmail;
 
   const TAG_LABELS: Record<string, string> = {
     LICH_HOC: "📅 Lịch học", DEADLINE: "⏰ Deadline", THAY_DOI: "🔄 Thay đổi",
     THI_CU: "📝 Thi cử", CHUNG_CHI: "🎓 Chứng chỉ", KHAC: "📌 Khác",
+    TIN_TUC: "📢 Tin tức",
   };
 
   const ROLE_LABELS: Record<string, string> = {
@@ -94,7 +96,7 @@ export default async function DashboardPage() {
             </h1>
             <p className="text-white/70 text-sm">
               {userMSSV && <span className="font-mono mr-3">{userMSSV}</span>}
-              <span className="role-badge role-{userRole}">{ROLE_LABELS[userRole] ?? userRole}</span>
+              <span className={`role-badge role-${userRole.toLowerCase()}`}>{ROLE_LABELS[userRole] ?? userRole}</span>
             </p>
           </div>
           <div className="text-right hidden sm:block">
@@ -103,6 +105,9 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Membership Center (role-aware quick actions) ──── */}
+      <MembershipCenter userId={userId} role={userRole as Role} />
 
       {/* ── Stats Row ─────────────────────────────────────── */}
       <div className="dash-grid">
@@ -155,7 +160,7 @@ export default async function DashboardPage() {
                     <div className="flex items-start gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                          <span className={`tag-${a.tag} text-[10px]`}>
+                          <span className={`tag-${a.tag.toLowerCase()} text-[10px]`}>
                             {TAG_LABELS[a.tag] ?? a.tag}
                           </span>
                           {a.urgent && <span className="badge-red text-[10px]">⚡ Khẩn</span>}
@@ -271,10 +276,10 @@ export default async function DashboardPage() {
                 })}
               </div>
             )}
-            {googleCalUrl && (
-              <a href={googleCalUrl} target="_blank" rel="noopener"
+            {zaloUrl && (
+              <a href={zaloUrl} target="_blank" rel="noopener"
                 className="btn-outline btn-sm w-full mt-4">
-                📅 Mở Google Calendar
+                💬 Tham gia nhóm Zalo
               </a>
             )}
           </div>
@@ -288,7 +293,6 @@ export default async function DashboardPage() {
                 { icon: "🎬", label: "Video bài giảng", href: "/portal/videos" },
                 { icon: "👥", label: "Danh bạ lớp", href: "/portal/classmates" },
                 { icon: "❓", label: "FAQ", href: "/portal/faq" },
-                ...(attendanceUrl ? [{ icon: "✅", label: "Điểm danh", href: attendanceUrl, external: true }] : []),
                 { icon: "🌐", label: "ULAW eLearning", href: "http://elearning.hcmulaw.edu.vn", external: true },
               ].map(l => (
                 <a key={l.label}
